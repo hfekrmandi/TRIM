@@ -14,6 +14,11 @@ rng(0)
 % This is the size of the reduced atmospheric system
 reduced_dimention_size = 80;
 [A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size);
+
+% create_sys_gold(n,p,m) generates an n-th order model with p outputs and m inputs.
+% [A,x0,B,C] = create_sys_gold(2,2,1);
+
+
 flag_converged = 0;
 global fail_prob reg_deg
 % range_prob = [ 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
@@ -27,7 +32,7 @@ range_prob = [ 0.2 ];
 range_reg = [ 4];
 
 % range_prob = [ 1];
-problem_def_gold(A,x0(1:size(A,1)));
+problem_def_gold(A,B,C,x0);
 
 if strcmp(opt_dist.scenario, '1');
     for i_step = 1:5
@@ -52,7 +57,7 @@ else
                 fields = {'obs' ,'result','Graph_History','sim'};
                 opt_dist = rmfield(opt_dist,fields);
             end
-            problem_def_gold(A,x0(1:size(A,1)));
+            problem_def_gold(A,B,C,x0);
             
             fail_prob =  range_prob(i_prob);
             opt_dist.reg_degree = reg_deg;

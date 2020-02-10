@@ -7,8 +7,7 @@ close all
 % dbclear all
 dbstop if error
 dbstop if warning
-% [A,x0,B,C] = create_sys_gold();
-[A,x0,B,C] = create_sys_atmosphere_gold();
+[A,x0,B,C] = create_sys_gold();
 
 
 

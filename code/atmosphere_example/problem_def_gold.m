@@ -1,4 +1,4 @@
-function problem_def_gold(A,x0)
+function problem_def_gold(A,B,C,x0)
 global opt_dist
 
 opt_dist.fid_log = fopen('log.txt','at');
@@ -10,7 +10,7 @@ opt_dist.FLAGS.our_method = 1;
 opt_dist.FLAGS.pure_CI = 0;
 opt_dist.FLAGS.debug_CI = 0;
 opt_dist.FLAGS.verbose = 0;
-opt_dist.nAgents = 9;
+opt_dist.nAgents = size(opt_dist.C,1);
 opt_dist.dt = 1;
 opt_dist.dimAgents = 1;
 opt_dist.obs.Range = 1.2;
@@ -25,7 +25,7 @@ r_var = 5*10^(-5);
 % Q = q_var*eye(size(A));
 % R = r_var*eye(size(C,1));
 opt_dist.reg_degree = 4;
-opt_dist.n_degree_graph = 9;
+opt_dist.n_degree_graph = opt_dist.nAgents;
 opt_dist.obs.rel_perc = 0.05;
 
 opt_dist.obs.R = r_var;
@@ -58,20 +58,20 @@ for i=1:opt_dist.nAgents
     topol_Adj(i,max(1,i-3):min(opt_dist.nAgents,i+3)) =1;
 end
 obs_Adj = topol_Adj;
-disNode1 = 7; disNode2 = 8; disNode3 = 9; disNode4 = 9;
-mask = generate_mask(opt_dist.nAgents,disNode1).*generate_mask(opt_dist.nAgents,disNode2).*generate_mask(opt_dist.nAgents,disNode3).*generate_mask(opt_dist.nAgents,disNode4);
-fault_Adj = mask.*obs_Adj;
+% disNode1 = 7; disNode2 = 8; disNode3 = 9; disNode4 = 9;
+% mask = generate_mask(opt_dist.nAgents,disNode1).*generate_mask(opt_dist.nAgents,disNode2).*generate_mask(opt_dist.nAgents,disNode3).*generate_mask(opt_dist.nAgents,disNode4);
+% fault_Adj = mask.*obs_Adj;
 opt_dist.A = A;
 G_full = generate_graph(full_Adj);
 G = generate_graph(topol_Adj);
-G_fault = generate_graph(fault_Adj);
+% G_fault = generate_graph(fault_Adj);
 G_obs = generate_graph(obs_Adj);
 
 opt_dist.Graphs.G_obs = G_obs;
 opt_dist.Graphs.G_full = G_full;
 opt_dist.Graphs.G = G;
-opt_dist.Graphs.G_fault = G_fault;
-nv = opt_dist.nAgents    ;
+% opt_dist.Graphs.G_fault = G_fault;
+nv = opt_dist.nAgents;
 opt_dist.x_gt = x_state(:);%10.*rand(1,opt_dist.nAgents*opt_dist.dimAgents)';%[0  0 0.8 0  1.6 0  2.4 0 3.2 0 4 0 4.8 0 5.6 0 6.4 0 7.2 0 ]';
 opt_dist.result.gt.x_bar = opt_dist.x_gt;
 

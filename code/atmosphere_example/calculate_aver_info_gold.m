@@ -10,7 +10,7 @@ for i_agent = 1 : opt_dist.nAgents
 end
 av_delta_I = zeros(size(delta_I{1}));
 av_delta_i = zeros(size(delta_i{1}));
-for i_agent=1:9
+for i_agent=1:opt_dist.nAgents
     av_delta_I = av_delta_I + delta_I{i_agent};
     av_delta_i = av_delta_i + delta_i{i_agent};
 end
