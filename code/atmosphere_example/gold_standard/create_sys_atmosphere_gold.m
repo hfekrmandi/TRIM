@@ -1,4 +1,8 @@
-function [A,x0,B,C] = create_sys_atmosphere_gold()
+function [Ar,x0,Br,Cr] = create_sys_atmosphere_gold(reduced_system_dim)
+if(nargin==0) 
+    reduced_system_dim = 80;
+end   
+        
 %Source and receptors are not on the boundaries (except z = 0)
 %10^5 system, Full State Measurements
 global opt_dist
@@ -22,9 +26,6 @@ nx                              =   10;
 ny                              =   10;
 nz                              =   10;
 dt                              =   1;
-
-
-
 
 %%
 %U = (U cos(alp)cos(beta), U cos(alpha) sin(beta), U sin(alp));
@@ -51,11 +52,6 @@ sz = Kz * dt/(dz^2);
 cx = Ux * dt/dx;
 cy = Uy * dt/(dy);
 cz = Uz * dt/(dz);
-%Stable
-% if 1 - 2 * max(sy+sz)-cx^2 -cx -cy-cz < 0
-%     disp('Error: unstable system');
-%     break;
-% else
 NUM_SYS = (ny-1)*(nx-1)*(nz);
 %Primal system
 [SR, S, SC] = atmo3dlax2 (Uwind, alp, beta, nx, ny, nz, xlim, ylim, zlim, Ky, Kz, dt);
@@ -68,13 +64,8 @@ SCad = SR;
 source.n = 10;                         % # of sources
 source.x = [280, 300, 900, 1100, 500,1300,500,1700,1400,700];     % x-location (m)
 source.y = [ 75, 205, 25,  185,  250,230, 330,170, 240, 200];     % y-location (m)
-
 source.z = [ 15,  35,  15,   15, 10, 10, 10, 10, 15, 20];     % height (m)
-%source.label=[' S1'; ' S2'; ' S3'; ' S4'; 'S5';'S6';'S7';'S8';'S9';'S10'];
-%source.n = 1;
-%source.x = 1.1;
-%source.y = 0;
-%source.z = 0;
+% source.label=[' S1'; ' S2'; ' S3'; ' S4'; 'S5';'S6';'S7';'S8';'S9';'S10'];
 
 tpy2kgps = 1.0 / 31536;               % conversion factor (tonne/yr to kg/s)
 source.Q = 1.5*[35, 80, 100, 50, 80, 50, 85, 100, 5, 110] * tpy2kgps ; % emission rate (kg/s)
@@ -116,104 +107,84 @@ for ns = 1 : recept.n
     C(ns,(nx-1)*(ny-1) * (disrecept.z(1,ns)-1) + (nx-1) * (disrecept.y(1,ns) -2) + disrecept.x(1,ns)-1) = 1;
 end
 
-x0 =zeros(size(A,1),1);
-% % figure
-for i=1:700
-    x0 =A*x0 + B*source.Q';
-    Cd = addboundary(x0, nx, ny, nz);
-    %     contourf(xmesh,ymesh,Cd(:,:,2))
-%     imagesc(Cd(:,:,2))
-    
-    %     pause(0.01)
-end
-% end
-is_stable = 0;
-while ~is_stable
-    sys = drss(70,9,10);
-    is_stable = isstable(sys);
-end
-rank(obsv(sys.A,sys.C));
-rank(ctrb(sys.A,sys.B));
- [hsv,BALDATA] = hsvd(sys);
- 
- ORDERS = 10;%numel(find(hsv>0.01*max(hsv(:))));
-
-rsys = balred(sys,ORDERS,BALDATA);
-
-% A = full(rsys.A);
-% B = full(rsys.B);
-% C = full(rsys.C);
-% opt_dist.sys = sys;
-% opt_dist.rsys = rsys;
-% opt_dist.order = ORDERS;
-% opt_dist.A = full(rsys.A);
-% opt_dist.B = full(rsys.B);
-% opt_dist.C = full(rsys.C);
-
-
-% reduced order model from dan
-load reduced_40.mat
-for i=1:size(Ct,1)
-    cnorm (i) = norm(Ct(i)) ;
-end
-
-[sortedX,sortingIndices] = sort(cnorm,'descend');
-% idx_c = [24934       24935       26102       26458       28042       31824       32783       35002       36106];
-idx_c = sortingIndices(1:10);
-
-
-opt_dist.A =At;
-opt_dist.B = Bt;
-opt_dist.C = Ct(idx_c',:);
-A=At;B=Bt;C= Ct(idx_c',:);
 source.n = 10;                         % # of sources
 source.x = [280, 300, 900, 1100, 500,1300,500,1700,1400,700];     % x-location (m)
 source.y = [ 75, 205, 25,  185,  250,230, 330,170, 240, 200];     % y-location (m)
 source.z = [ 15,  35,  15,   15, 10, 10, 10, 10, 15, 20];     % height (m)
+source.label=[' S1'; ' S2'; ' S3'; ' S4'; ' S5';' S6';' S7';' S8';' S9';'S10'];
 
-% source.label=[' S1'; ' S2'; ' S3'; ' S4'; ' S5';' S6';' S7';' S8';' S9';'S10'];
-% 
-% x0 =zeros(size(A,1),1);
-% figure
-
-% % model generated inside code
-% opt_dist.A = full(A);
-% opt_dist.B = full(B);
-% opt_dist.C = full(C);
-% % rank(obsv(A,C))
-% % rank(ctrb(A,B))
-% 
-% 
 opt_dist.recept = recept;
 opt_dist.source = source;
-x0 = x0(1:size(A,1));
+
+TIME_STEP = 10;
+NUM_ROUND = 401;
+
+Xt = zeros(NUM_SYS, 1);
+for iall = 1 : NUM_ROUND
+    X = zeros(NUM_SYS,TIME_STEP);
+    X(:,1) = Xt;
+    for k= 1 : TIME_STEP - 1
+        for i = 1  : length(SR)
+            X(SR(i),k+1) = X(SR(i),k+1)+S(i)*X(SC(i),k);
+        end
+        X(:,k+1) = X(:,k+1) + B*randn(NUM_IN,1);
+    end
+    Xt = X(:,end);
+    Xs(:, iall) = X(:,end); %Pick (X(TIME_STEP, 2*TIME_STEP,..., NUM_ROUND*TIME_STEP))
+end
+
+Yt = zeros(NUM_SYS, 1);
+for iall = 1 : NUM_ROUND
+    Y = zeros(NUM_SYS,TIME_STEP);
+    Y(:,1) = Yt;
+    for k= 1 : TIME_STEP - 1
+        for i = 1  : length(SC)
+            Y(SC(i),k+1) = Y(SC(i),k+1)+S(i)*Y(SR(i),k);
+            
+        end
+        %Y(:,k+1) = Y(:,k+1) + F(:, TIME_STEP*(iall-1)+k);
+        Y(:,k+1) = Y(:,k+1) + (randn(NUM_SYS,1));
+    end
+    Yt = Y(:,end);
+    Ys(:, iall) = Y(:,end);
+end
+clear Xt Yt X Y
+Xp = Xs(:, 1:end);
+Yp = Ys(:, 1:end);
+Ht =Yp' * Xp;
+%%
+[Ut, St, Vt] = svd(Ht);
+NUM_NON = reduced_system_dim;
+Unt = Ut(:, 1:NUM_NON);
+Snt = St(1:NUM_NON, 1:NUM_NON);
+Vnt = Vt(:,1:NUM_NON);
+
+Trt= Xp* Vnt* Snt^(-1/2);
+Tlt = Snt^(-1/2) * Unt' * Yp';
+
+Temp = zeros(NUM_SYS,NUM_NON);
+for j = 1 : NUM_NON
+    for i = 1 : length(SR)
+        Temp (SR(i), j) = Temp (SR(i),j) + S(i) * Trt(SC(i),j);
+    end
+end
+
+At=  Tlt*Temp;
+Bt = Tlt * B;
+Ct = C * Trt;
+
+opt_dist.A =At;
+opt_dist.B = Bt;
+opt_dist.C = Ct;
+Ar = At;
+Br = Bt;
+Cr = Ct;
+
+% Run the system for some time to get a non zero initial condition
+% Let the polluters pollute :)
+x0 = zeros(size(Ar,1),1);
 for i=1:10
-    x0 =A*x0(1:size(A,1)) + B*source.Q';
-%     Cd = addboundary(x0, nx, ny, nz);
-    %     contourf(xmesh,ymesh,Cd(:,:,2))
-%     imagesc(Cd(:,:,2))
-    
-    %     pause(0.01)
+    x0 =Ar*x0 + Br*source.Q';
 end
 
 
-
-
-% sys1.A = A 
-% sys1.B = B
-% sys1.C = C
-% sys1 = ss(full(A),full(B),full(C),[]);
-% [hsv,BALDATA] = hsvd(sys1);
-%  
-%  ORDERS = numel(find(hsv>0.01*max(hsv(:))));
-% 
-% rsys = balred(sys1,ORDERS,BALDATA);
-% A = full(rsys.A);
-% B = full(rsys.B);
-% C = full(rsys.C);
-% opt_dist.sys = sys1;
-% opt_dist.rsys = rsys;
-% opt_dist.order = ORDERS;
-% opt_dist.A = full(rsys.A);
-% opt_dist.B = full(rsys.B);
-% opt_dist.C = full(rsys.C);

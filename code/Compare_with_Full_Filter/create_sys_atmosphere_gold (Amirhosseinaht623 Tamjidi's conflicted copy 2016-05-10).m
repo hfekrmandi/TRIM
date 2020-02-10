@@ -152,7 +152,7 @@ end
 
 
 % % reduced order model from dan
-load RPODmodel_t
+% load RPODmodel_t
 idx_c = [24934       24935       26102       26458       28042       31824       32783       35002       36106];
 opt_dist.A =At;
 opt_dist.B = Bt;

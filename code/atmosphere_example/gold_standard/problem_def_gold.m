@@ -1,7 +1,6 @@
 function problem_def_gold(A,x0)
 global opt_dist
 
-
 opt_dist.fid_log = fopen('log.txt','at');
 fprintf(opt_dist.fid_log , 'text line number 1 \n');
 
@@ -88,7 +87,6 @@ end
 
 i_time = 1;
 opt_dist.i_time = i_time;
-
 opt_dist.result.prior.x_cen =  x_state(:);
 opt_dist.result.prior.P_cen =  0.05.*eye(opt_dist.dimState);
 for i_agent = 1 : opt_dist.nAgents
@@ -104,5 +102,4 @@ for i_agent = 1 : opt_dist.nAgents
         opt_dist.result.initial.x_bar_CI(:,i_agent) = opt_dist.result.prior.x_bar(:,i_agent);
         opt_dist.result.initial.P_bar_CI(:,:,i_agent) = opt_dist.result.prior.P_bar(:,:,i_agent);
     end
-    
 end
