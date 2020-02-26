@@ -542,7 +542,6 @@ for k = nz
         S(1, NR+3)  =  1 - 2 * sy(i,1) - 2 * sz(i,1) - cx^2 -cx -cy -cz;
        
         S(1, NR+4)  =   sy(i,1); 
-        x0
         
         SC(1, NR)   =   (nx-1)*(ny-1)*(k-2)+(nx-1)*(j-2)+i-1;
         SC(1, NR+1) =   (nx-1)*(ny-1)*(k-1)+(nx-1)*(j-3)+i-1;        

@@ -116,99 +116,22 @@ for ns = 1 : recept.n
     C(ns,(nx-1)*(ny-1) * (disrecept.z(1,ns)-1) + (nx-1) * (disrecept.y(1,ns) -2) + disrecept.x(1,ns)-1) = 1;
 end
 
-x0 =zeros(size(A,1),1);
-% % figure
-for i=1:700
-    x0 =A*x0 + B*source.Q';
-    Cd = addboundary(x0, nx, ny, nz);
-    %     contourf(xmesh,ymesh,Cd(:,:,2))
-%     imagesc(Cd(:,:,2))
-    
-    %     pause(0.01)
-end
-% end
-is_stable = 0;
-while ~is_stable
-    sys = drss(70,9,10);
-    is_stable = isstable(sys);
-end
-rank(obsv(sys.A,sys.C));
-rank(ctrb(sys.A,sys.B));
- [hsv,BALDATA] = hsvd(sys);
- 
- ORDERS = 10;%numel(find(hsv>0.01*max(hsv(:))));
-
-rsys = balred(sys,ORDERS,BALDATA);
-
-% A = full(rsys.A);
-% B = full(rsys.B);
-% C = full(rsys.C);
-% opt_dist.sys = sys;
-% opt_dist.rsys = rsys;
-% opt_dist.order = ORDERS;
-% opt_dist.A = full(rsys.A);
-% opt_dist.B = full(rsys.B);
-% opt_dist.C = full(rsys.C);
-
-
-% reduced order model from dan
-load reduced_40
-idx_c = [24934       24935       26102       26458       28042       31824       32783       35002       36106];
-opt_dist.A =At;
-opt_dist.B = Bt;
-nSensor = 40;
-[C_sensor,ind_sensor] = choose_sensors(Ct,nSensor);
-
-opt_dist.C = C_sensor;
 A=At;B=Bt;C= C_sensor;
 source.n = 10;                         % # of sources
 source.x = [280, 300, 900, 1100, 500,1300,500,1700,1400,700];     % x-location (m)
 source.y = [ 75, 205, 25,  185,  250,230, 330,170, 240, 200];     % y-location (m)
 source.z = [ 15,  35,  15,   15, 10, 10, 10, 10, 15, 20];     % height (m)
+source.label=[' S1'; ' S2'; ' S3'; ' S4'; ' S5';' S6';' S7';' S8';' S9';'S10'];
 
-% source.label=[' S1'; ' S2'; ' S3'; ' S4'; ' S5';' S6';' S7';' S8';' S9';'S10'];
-% 
-% x0 =zeros(size(A,1),1);
-% figure
-
-% % model generated inside code
-% opt_dist.A = full(A);
-% opt_dist.B = full(B);
-% opt_dist.C = full(C);
-% % rank(obsv(A,C))
-% % rank(ctrb(A,B))
-% 
-% 
 opt_dist.recept = recept;
 opt_dist.source = source;
 x0 = x0(1:size(A,1));
 for i=1:10
     x0 =A*x0(1:size(A,1)) + B*source.Q';
-%     Cd = addboundary(x0, nx, ny, nz);
-    %     contourf(xmesh,ymesh,Cd(:,:,2))
-%     imagesc(Cd(:,:,2))
-    
-    %     pause(0.01)
 end
 
-
-
-
-% sys1.A = A 
-% sys1.B = B
-% sys1.C = C
-% sys1 = ss(full(A),full(B),full(C),[]);
-% [hsv,BALDATA] = hsvd(sys1);
-%  
-%  ORDERS = numel(find(hsv>0.01*max(hsv(:))));
-% 
-% rsys = balred(sys1,ORDERS,BALDATA);
-% A = full(rsys.A);
-% B = full(rsys.B);
-% C = full(rsys.C);
-% opt_dist.sys = sys1;
-% opt_dist.rsys = rsys;
-% opt_dist.order = ORDERS;
-% opt_dist.A = full(rsys.A);
-% opt_dist.B = full(rsys.B);
-% opt_dist.C = full(rsys.C);
+opt_dist.sys = sys1;
+opt_dist.order = ORDERS;
+opt_dist.A = full(rsys.A);
+opt_dist.B = full(rsys.B);
+opt_dist.C = full(rsys.C);
