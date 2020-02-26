@@ -49,8 +49,8 @@ Bt = Tlt * B;
 Ct = C *Trt;
 
 
-VF = Trt*ct;
-UF = inv(ct)*Tlt;
+VF = Trt*Ct';
+UF = inv(Ct')*Tlt;
 
 Cr = C * VF;
 Br = UF * B;

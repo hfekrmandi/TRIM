@@ -12,11 +12,11 @@ H = [];
 h = [];
 for idx_agent=idx_agent_range
     H_temp = zeros(opt_dist.dimObs,size(opt_dist.x_gt,1));
-    h_temp = opt_dist.C(idx_agent,:) * x_pred;
+    h_temp = opt_dist.C(idx_agent,:) * x_pred; %??
     %         if norm(z_temp) <=opt_dist.obs.Range
     idx_vis = [idx_vis,idx_agent];
-    h = [h;h_temp];
-    H_temp = opt_dist.C(idx_agent,:);
+    h = [h;h_temp]; %observation vector
+    H_temp = opt_dist.C(idx_agent,:); %observation matrix
     H = [H;H_temp];
 end
 end

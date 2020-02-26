@@ -134,10 +134,9 @@ while ~is_stable
 end
 rank(obsv(sys.A,sys.C));
 rank(ctrb(sys.A,sys.B));
- [hsv,BALDATA] = hsvd(sys);
- 
- ORDERS = numel(find(hsv>0.01*max(hsv(:))));
-
+[hsv,BALDATA] = hsvd(sys);
+ORDERS = 80
+sys = ss(A,B, C,[]);
 rsys = balred(sys,ORDERS,BALDATA);
 
 A = full(rsys.A);

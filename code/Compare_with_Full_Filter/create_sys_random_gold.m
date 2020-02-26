@@ -128,27 +128,27 @@ for i=1:700
 end
 % end
 is_stable = 0;
-while ~is_stable
-    sys = drss(20,40,10);
-    is_stable = isstable(sys);
-end
-rank(obsv(sys.A,sys.C));
-rank(ctrb(sys.A,sys.B));
- [hsv,BALDATA] = hsvd(sys);
- 
- ORDERS = 10;%numel(find(hsv>0.01*max(hsv(:))));
-
-rsys = balred(sys,ORDERS,BALDATA);
-
-A = full(rsys.A);
-B = full(rsys.B);
-C = full(rsys.C);
-opt_dist.sys = sys;
-opt_dist.rsys = rsys;
-opt_dist.order = ORDERS;
-opt_dist.A = full(rsys.A);
-opt_dist.B = full(rsys.B);
-opt_dist.C = full(rsys.C);
+% while ~is_stable
+%     sys = drss(20,40,10);
+%     is_stable = isstable(sys);
+% end
+% rank(obsv(sys.A,sys.C));
+% rank(ctrb(sys.A,sys.B));
+%  [hsv,BALDATA] = hsvd(sys);
+%  
+%  ORDERS = 10;%numel(find(hsv>0.01*max(hsv(:))));
+% 
+% rsys = balred(sys,ORDERS,BALDATA);
+% 
+% A = full(rsys.A);
+% B = full(rsys.B);
+% C = full(rsys.C);
+% opt_dist.sys = sys;
+% opt_dist.rsys = rsys;
+% opt_dist.order = ORDERS;
+% opt_dist.A = full(rsys.A);
+% opt_dist.B = full(rsys.B);
+% opt_dist.C = full(rsys.C);
 
 
 % reduced order model from dan

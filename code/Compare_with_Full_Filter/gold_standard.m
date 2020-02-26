@@ -8,7 +8,6 @@ dbstop if error
 % dbstop if warning
 rng(0)
 
-% [A,x0,B,C] = create_sys_gold();
 [A,x0,B,C] = create_sys_atmosphere_gold();
 
 
