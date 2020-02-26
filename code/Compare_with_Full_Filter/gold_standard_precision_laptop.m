@@ -20,7 +20,7 @@ global fail_prob reg_deg
 % range_prob = [ 0 0.2  0.4 0.6 0.8 1];
 range_prob = [ 1 ];
 
-range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
+% range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
 
 
 % range_reg = [ 2 4 6 8];
