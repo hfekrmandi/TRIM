@@ -109,7 +109,7 @@ recept.z = [   0,  10,  10,   1,  15,   2,    3,   12,  12 ]; % height (m)
 recept.label=[ ' R1 '; ' R2 '; ' R3 '; ' R4 '; ' R5 '; ' R6 '; ...
     ' R7 '; ' R8 '; ' R9 ' ];
 %}
-recept.x = [  60,  76, 267, 331, 514, 904, 1288, 1254, 972, randi(xlim + [11, -11],1,recept.n-9)];
+recept.x = [  60,  76, 267, 331, 514, 904, 1288, 1254, 972, randsample(xlim(1)+11 : xlim(2)-11,recept.n-9)]; %randsample to avoid repetition
 recept.y = [ 130,  70, -21, 308, 182,  75,  116,  383, 507, randi(ylim + [11, -11],1,recept.n-9)];
 recept.z = [   0,  10,  10,   1,  15,   2,    3,   12,  12, randi(zlim + [11, -11],1,recept.n-9)];
 recept.label = strings(1,recept.n);
@@ -146,6 +146,17 @@ source.label=[' S1'; ' S2'; ' S3'; ' S4'; ' S5';' S6';' S7';' S8';' S9';'S10'];
 
 opt_dist.recept = recept;
 opt_dist.source = source;
+
+%{
+%plot receptor and source locations.
+fig = figure;
+plot(source.x,source.y,'o','MarkerFaceColor', 'g')
+text(source.x,source.y,source.label,'VerticalAlignment','bottom','HorizontalAlignment','right')
+hold on
+plot(recept.x,recept.y,'x','Color','k')
+text(recept.x,recept.y,recept.label,'VerticalAlignment','bottom','HorizontalAlignment','right')
+uiwait(fig)
+%}
 
 TIME_STEP = 10;
 NUM_ROUND = 401; %??

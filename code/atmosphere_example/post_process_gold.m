@@ -59,7 +59,7 @@ for i_agent=1:opt_dist.nAgents
 end
 
 for j_agent = 1 : opt_dist.nAgents
-    for i_consensus=start_step : max_it;
+    for i_consensus=start_step : max_it
         error_struct.e_cen(i_consensus - start_step +1) = sqrt(immse(x_cen , x_gt));
         error_struct.con_perc_cen(i_consensus - start_step +1)  = consistency_percentage(x_cen ,x_gt, P_cen  );
         %% Getting the Estimate of Agent j_agent

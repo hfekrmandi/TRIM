@@ -1,4 +1,4 @@
-%function [perf_index_prob,perf_index] = gold_standard()
+function [perf_index_prob,perf_index] = gold_standard()
 addpath(genpath(pwd));
 clear all
 %global opt_dist
@@ -9,17 +9,20 @@ dbstop if error
 % dbstop if warning
 
 
-
 % This is the size of the reduced atmospheric system
 reduced_dimention_size = 80;
-n_receptors_array = [10 100]; %%number of receptors or sensors array
+n_receptors_array = [9,10,11,12,15,20]; %%number of receptors or sensors array %min of 11 agents for full observability.
 
+error_index = 1; %initialising index for error_ variable.
 for n_recept = n_receptors_array
     clearvars -global %clearing for next case with different n_receptors
     global opt_dist
     
+    rng(0) %for choosing agents repeatably randomly
+
     [A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size,n_recept);
-    
+    disp('controllability:'); disp(rank(ctrb(A,B)));
+    disp('observability:'); disp(rank(obsv(A,C)));
     % Fix the random number generator seed to make the runs repeatable
     % Feel free to change this.
     rng(0)
@@ -42,6 +45,7 @@ for n_recept = n_receptors_array
     range_reg = [ 4];
 
     % range_prob = [ 1];
+    
     problem_def_gold(A,B,C,x0);
 
     if strcmp(opt_dist.scenario, '1');
@@ -49,8 +53,11 @@ for n_recept = n_receptors_array
             i_step
             opt_dist.i_step = i_step;
             %     flag_converged = 0;
+               
             sim_system_gold();
+            
             pred();
+
             consenus_gold();
             calc_super_gold_update();
             [error_results{i_step}] = post_process_gold();
@@ -58,7 +65,7 @@ for n_recept = n_receptors_array
         profile viewer
 
     else
-        range_step = 2; %24
+        range_step = 1; %24
         for j_reg=1:length(range_reg)
             reg_deg = range_reg(j_reg);
             tic
@@ -90,9 +97,17 @@ for n_recept = n_receptors_array
         end
     end
     %%
-    mean_ = calc_composite_results_gold(error_results,length(range_reg),length(range_prob),range_step);
-
-    assignin('base',['mean_',num2str(n_recept)],mean_);
+    %disp('error_results'); disp(error_results)
+    [error_(error_index),mean_(error_index)] = calc_composite_results_gold(error_results,length(range_reg),length(range_prob),range_step);
+    error_index = error_index + 1;
+    %disp('error_'); disp(error_)
+    
+    
+    
+    
 end
-%end
+assignin('base','mean_',mean_);%store variable in workspace
+assignin('base','error_',error_);
+assignin('base','n_receptors_array',n_receptors_array);
+end
 
