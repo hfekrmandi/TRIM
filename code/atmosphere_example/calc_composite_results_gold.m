@@ -1,4 +1,4 @@
-function mean_ = calc_composite_results_gold(error_results,j_re_max,i_prob_max,i_step_max)
+function [error_, mean_] = calc_composite_results_gold(error_results,j_re_max,i_prob_max,i_step_max)
 names = fieldnames(error_results{1,1,1}.error_ICI);
 
 for j_field = 1:numel(names)
@@ -35,7 +35,27 @@ for j_field = 1:numel(names)
     end
 end
 
-%mean_
+%@Naveed
+%store data for all times steps
+for j_field = 1:numel(names)
+    for j_reg=1:j_re_max
+        for i_prob=1:i_prob_max
+            for i_step=1:i_step_max
+
+                var_name = eval(['names(',num2str(j_field), ')']);
+                eval (['error_.',var_name{1},'(',num2str(j_reg),',',num2str(i_prob),',1,:) = ',...
+                    var_name{1},'(',num2str(j_reg),',',num2str(i_prob),',:,1);']) %1 for hybrid
+
+                eval (['error_.',var_name{1},'(',num2str(j_reg),',',num2str(i_prob),',2,:) = ',...
+                    var_name{1},'(',num2str(j_reg),',',num2str(i_prob),',:,2);']) %2 for ICI
+
+            end
+        end
+    end
+    eval(['error_.',var_name{1},' = squeeze(error_.',var_name{1},');']); %squeeze dimensions
+end
+
+
 close all
  figure
  plot(squeeze(mean_.e_BC_dist_gold_vs_cent(1,:,1)),'LineWidth',3); hold on;

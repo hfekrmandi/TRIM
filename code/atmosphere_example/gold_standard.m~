@@ -8,21 +8,19 @@ close all
 dbstop if error
 % dbstop if warning
 
+rng(0) %for choosing agents repeatably randomly
 
 % This is the size of the reduced atmospheric system
 reduced_dimention_size = 80;
-n_receptors_array = [9,10,11,12,15,20]; %%number of receptors or sensors array %min of 11 agents for full observability.
+n_receptors_array = [60 70 80 90 100]; %%number of receptors or sensors array
 
 error_index = 1; %initialising index for error_ variable.
 for n_recept = n_receptors_array
     clearvars -global %clearing for next case with different n_receptors
     global opt_dist
     
-    rng(0) %for choosing agents repeatably randomly
-
     [A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size,n_recept);
-    disp('controllability:'); disp(rank(ctrb(A,B)));
-    disp('observability:'); disp(rank(obsv(A,C)));
+    
     % Fix the random number generator seed to make the runs repeatable
     % Feel free to change this.
     rng(0)
@@ -45,7 +43,6 @@ for n_recept = n_receptors_array
     range_reg = [ 4];
 
     % range_prob = [ 1];
-    
     problem_def_gold(A,B,C,x0);
 
     if strcmp(opt_dist.scenario, '1');
@@ -53,11 +50,8 @@ for n_recept = n_receptors_array
             i_step
             opt_dist.i_step = i_step;
             %     flag_converged = 0;
-               
             sim_system_gold();
-            
             pred();
-
             consenus_gold();
             calc_super_gold_update();
             [error_results{i_step}] = post_process_gold();
@@ -65,7 +59,7 @@ for n_recept = n_receptors_array
         profile viewer
 
     else
-        range_step = 1; %24
+        range_step = 20; %24
         for j_reg=1:length(range_reg)
             reg_deg = range_reg(j_reg);
             tic

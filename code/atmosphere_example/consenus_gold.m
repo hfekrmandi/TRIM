@@ -4,8 +4,8 @@ global opt_dist
 opt_dist.result.update.delta_i_cen = zeros(size(opt_dist.result.pred.x_cen));
 opt_dist.result.update.delta_I_cen  = zeros(size(opt_dist.result.pred.P_cen));
 [av_delta_I,av_delta_i] = calculate_aver_info_gold();
-opt_dist.result.update.delta_I_cen = opt_dist.recept.n*av_delta_I; %change 9 to number of agents
-opt_dist.result.update.delta_i_cen = opt_dist.recept.n*av_delta_i;  %change 9 to number of agents
+opt_dist.result.update.delta_I_cen = opt_dist.nAgents*av_delta_I; %changed 9 to number of agents
+opt_dist.result.update.delta_i_cen = opt_dist.nAgents*av_delta_i;  %changed 9 to number of agents
 opt_dist.result.est{1}.Y_cen = opt_dist.result.pred.Y_cen + opt_dist.result.update.delta_I_cen;
 opt_dist.result.est{1}.y_cen = opt_dist.result.pred.y_cen + opt_dist.result.update.delta_i_cen;
 
@@ -18,6 +18,7 @@ if  opt_dist.FLAGS.compare_with_CI
     consensus_CI()
 end
 end
+
 function consensus_our_method()
 global opt_dist
 
@@ -88,7 +89,7 @@ for i_consensus = 2:opt_dist.nSteps
             updated_delta_I = opt_dist.result.consenus{j_agent}.delta_I{i_consensus} + p_jk*opt_dist.result.consenus{k_agent}.delta_I{i_consensus-1};
             updated_delta_i = opt_dist.result.consenus{j_agent}.delta_i{i_consensus} + p_jk*opt_dist.result.consenus{k_agent}.delta_i{i_consensus-1};
             opt_dist.result.consenus{j_agent}.delta_I{i_consensus} = updated_delta_I;
-            opt_dist.result.consenus{j_agent}.delta_i{i_consensus} =updated_delta_i;
+            opt_dist.result.consenus{j_agent}.delta_i{i_consensus} = updated_delta_i;
             if p_jk
             opt_dist.result.consenus{j_agent}.group_set{i_consensus} = union( opt_dist.result.consenus{j_agent}.group_set{i_consensus},...
                 opt_dist.result.consenus{k_agent}.group_set{i_consensus-1});
@@ -135,6 +136,7 @@ end
 
 % opt_dist.result.ratio_det_hyb = ratio_det;
 end
+
 function consensus_CI()
 global opt_dist
 for i_agent = 1 : opt_dist.nAgents

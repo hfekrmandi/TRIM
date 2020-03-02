@@ -36,7 +36,7 @@ opt_dist.iter_interest = [1];
 opt_dist.FLAGS.obs_noise_type =  'absolute'; % ('absolute' | 'relative');
 opt_dist.dimObs =1;%opt_dist.dimAgents;
 opt_dist.nIterations = 60;
-opt_dist.nSteps = 60;
+opt_dist.nSteps = 60; %consensus steps (change to 2 for Ren implementation)
 opt_dist.scenario = '2';
 opt_dist.motion.Q = q_var;%(opt_dist.source.Q.*0.1).^2;
 % opt_dist.
@@ -81,9 +81,9 @@ x_mean = mean(x0);
 % imagesc(full(G_fault.Adj))
 % imagesc(double(G.Adj))
 
-for i=1:nv
-    disp([i,sum(G.p(i,:))]); %??
-end
+%for i=1:nv
+%    disp([i,sum(G.p(i,:))]); %??
+%end
 
 i_time = 1;
 opt_dist.i_time = i_time;
