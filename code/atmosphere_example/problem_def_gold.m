@@ -1,4 +1,4 @@
-function problem_def_gold(A,B,C,x0)
+function problem_def_gold(A,B,C,x0,converg_steps)
 global opt_dist
 
 opt_dist.fid_log = fopen('log.txt','at');
@@ -36,7 +36,7 @@ opt_dist.iter_interest = [1];
 opt_dist.FLAGS.obs_noise_type =  'absolute'; % ('absolute' | 'relative');
 opt_dist.dimObs =1;%opt_dist.dimAgents;
 opt_dist.nIterations = 60;
-opt_dist.nSteps = 60; %consensus steps (change to 2 for Ren implementation)
+opt_dist.nSteps = converg_steps + 1; %consensus steps (change to 2 for Ren implementation) +1 for initialisation step
 opt_dist.scenario = '2';
 opt_dist.motion.Q = q_var;%(opt_dist.source.Q.*0.1).^2;
 % opt_dist.

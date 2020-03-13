@@ -1,4 +1,4 @@
-function [error_results,opt_dist_result] =post_process_gold2()
+function [error_results,opt_dist_result] = post_process_gold2()
 global opt_dist
 
 %% calculate error statistics
@@ -51,8 +51,8 @@ end
 function error_mean = calc_error_stat(method)
 global opt_dist
 
-max_it = opt_dist.nSteps;
-start_step =max_it - 3;
+max_it = opt_dist.nSteps; 
+start_step = 2;%max_it - 3; %change
 P_cen = inv(opt_dist.result.est{1}.Y_cen);
 x_cen = P_cen*(opt_dist.result.est{1}.y_cen);
 x_gt =opt_dist.sim.gt.x_bar;
