@@ -1,5 +1,6 @@
 function [weights_ci,inf_mat,inf_vect] = calc_ci_weights_ver3(S1,local_inf_vec,method_)
 
+assignin('base','S1', S1);
 nCovSamples = size(S1,3);
 % global opt_dist
 x0  = rand(nCovSamples,1);
