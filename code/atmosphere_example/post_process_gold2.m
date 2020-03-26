@@ -17,7 +17,7 @@ for i_agent = 1 : opt_dist.nAgents
         x_ICI = P_ICI*(opt_dist.result.est{end}.y_bar_CI(:,i_agent));
         opt_dist.result.prior.x_bar_CI(:,i_agent) = x_ICI;
         opt_dist.result.prior.P_bar_CI(:,:,i_agent) = P_ICI;
-        
+
     end
     if opt_dist.FLAGS.our_method
         P_Hyb = inv(opt_dist.result.est{end}.Y_bar(:,:,i_agent));
@@ -51,9 +51,9 @@ end
 function error_mean = calc_error_stat(method)
 global opt_dist
 
-max_it = opt_dist.nSteps; 
+max_it = opt_dist.nSteps;
 if max_it < 3
-    start_step = 2;%2 for Ren; 
+    start_step = 2;%2 for Ren;
 else
     start_step = max_it - 3;
 end
@@ -85,93 +85,93 @@ for j_agent = 1 : opt_dist.nAgents
 
            %% Error Gold vs. centralized
             error_struct.e_gold_vs_cent(i_consensus - start_step +1,j_agent) = sqrt(immse(x_gold{j_agent} , x_cen));
-              
-            
+
+
             %% Error vs. centralized
             error_struct.e_vs_cen(i_consensus - start_step +1,j_agent) = sqrt(immse(x ,  x_cen ));
-            
+
             %% Error vs. gold
             error_struct.e_vs_gold(i_consensus - start_step +1,j_agent) = sqrt(immse(x ,  x_gold{j_agent} ));
 
             %% Error vs. Ground Truth
             error_struct.e_vs_gt(i_consensus - start_step +1,j_agent) = sqrt(immse(x ,  x_gt ));
-            
+
             %% consistency
             error_struct.con_perc(i_consensus - start_step +1,j_agent)  = consistency_percentage(x,x_gt, P );
-            
+
             %% root of det criteria
             error_struct.e_root_ratio_cent(i_consensus - start_step +1,j_agent) = (det( P_cen) / det(P))^(1/opt_dist.dimState) ;
             error_struct.e_root_ratio_gold(i_consensus - start_step +1,j_agent) = (det( P_gold{j_agent} )/ det(P))^(1/opt_dist.dimState) ;
-            
+
             %% root of det values
             error_struct.e_cent_root(i_consensus - start_step +1,j_agent) = (det( P_cen) )^(1/opt_dist.dimState) ;
             error_struct.e_gold_root(i_consensus - start_step +1,j_agent) = (det( P_gold{j_agent} ))^(1/opt_dist.dimState) ;
             error_struct.e_root(i_consensus - start_step +1,j_agent) = (det( P ))^(1/opt_dist.dimState) ;
-            
+
             %% trace criteria
             error_struct.e_trace_ratio_cent(i_consensus - start_step +1,j_agent) = (trace( P_cen) / trace(P)) ;
             error_struct.e_trace_ratio_gold(i_consensus - start_step +1,j_agent) = (trace( P_gold{j_agent} )/ trace(P)) ;
-            
+
             %% trace values
             error_struct.e_trace_cen(i_consensus - start_step +1,j_agent) = trace( P_cen)  ;
             error_struct.e_trace_gold(i_consensus - start_step +1,j_agent) = trace( P_gold{j_agent})  ;
             error_struct.e_trace(i_consensus - start_step +1,j_agent) = trace( P)  ;
-            
+
             %% Bhattacharya Distance
             error_struct.e_BC_dist_gold(i_consensus - start_step +1,j_agent) = BC_distance(x_gold{j_agent},P_gold{j_agent},x,P);
             error_struct.e_BC_dist_cent(i_consensus - start_step +1,j_agent) = BC_distance(x_cen,P_cen,x,P);
             error_struct.e_BC_dist_gold_vs_cent(i_consensus - start_step +1,j_agent) = BC_distance(x_cen,P_cen,x_gold{j_agent},P_gold{j_agent});
 
         end
-        
+
     end
-    
-    
+
+
     error_mean.e_cen = mean( error_struct.e_cen(:));
     error_mean.con_perc_cen  = mean( error_struct.con_perc_cen(:) );
-    
+
     %% Error Gold vs. Ground Truth
     error_mean.e_gold = mean(  error_struct.e_gold(:) );
 
     %% Error Gold vs. centralized
     error_mean.e_gold_vs_cent = mean(  error_struct.e_gold_vs_cent(:) );
-    
+
     %% Error vs. centralized
     error_mean.e_vs_cen = mean( error_struct.e_vs_cen(:) );
-    
+
     %% Error vs. gold
     error_mean.e_vs_gold = mean(  error_struct.e_vs_gold(:) );
-    
+
     %% Error vs. Ground Truth
     error_mean.e_vs_gt = mean( error_struct.e_vs_gt(:) );
-    
+
     %% consistency
     error_mean.con_perc  = mean( error_struct.con_perc(:) );
-    
+
     %% root of det criteria
     error_mean.e_root_ratio_cent = mean( error_struct.e_root_ratio_cent(:) );
     error_mean.e_root_ratio_gold = mean( error_struct.e_root_ratio_gold(:) );
-    
+
     %% root of det values
     error_mean.e_cent_root = mean( error_struct.e_cent_root(:) );
     error_mean.e_gold_root = mean( error_struct.e_gold_root(:) );
     error_mean.e_root = mean( error_struct.e_root(:) );
-    
+
     %% trace criteria
     error_mean.e_trace_ratio_cent = mean( error_struct.e_trace_ratio_cent(:) );
     error_mean.e_trace_ratio_gold = mean( error_struct.e_trace_ratio_gold(:) );
-    
+
     %% trace values
     error_mean.e_trace_cen = mean( error_struct.e_trace_cen(:) );
     error_mean.e_trace_gold = mean( error_struct.e_trace_gold(:) );
     error_mean.e_trace = mean( error_struct.e_trace(:) );
-    
+
     %% Bhattacharya Distance
     error_mean.e_BC_dist_gold = mean( error_struct.e_BC_dist_gold(:) );
     error_mean.e_BC_dist_cent = mean( error_struct.e_BC_dist_cent(:) );
     error_mean.e_BC_dist_gold_vs_cent = mean( error_struct.e_BC_dist_gold_vs_cent(:) );
 
-    
+
 end
 
 end

@@ -41,7 +41,11 @@ for n_recept = n_receptors_array
         % range_prob = [ 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
         % range_prob = [ 0.4 0.6 0.8  1];
         % range_prob = [ 0 0.2  0.4 0.6 0.8 1];
+<<<<<<< HEAD
         range_prob = [ 0.02 ]; %0.2
+=======
+        range_prob = [ 0.2 ];
+>>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
 
         % range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
 
@@ -91,21 +95,24 @@ for n_recept = n_receptors_array
                         consenus_gold();
                         calc_super_gold_update();
                         time_(j_reg,i_prob,i_step) = toc;
-                        
-                        
+<<<<<<< HEAD
+
+
                         for i_agent=1:opt_dist.nAgents
-                            
+
                             P_gold{error_index,i_step,i_agent} =  opt_dist.result.est_gold{i_agent}.P_bar ;
                             x_gold{error_index,i_step,i_agent} = opt_dist.result.est_gold{i_agent}.x_bar ;
-                            
+
                             P_Hybrid{error_index,i_step,i_agent} = inv(opt_dist.result.est{opt_dist.nSteps}.Y_bar(:,:,i_agent));
                             x_Hybrid{error_index,i_step,i_agent} = P_Hybrid{error_index,i_step,i_agent}*(opt_dist.result.est{opt_dist.nSteps}.y_bar(:,i_agent));
-                            
+
                             P_ICI{error_index,i_step,i_agent} = inv(opt_dist.result.est{opt_dist.nSteps}.Y_bar_CI(:,:,i_agent));
                             x_ICI{error_index,i_step,i_agent} = P_ICI{error_index,i_step,i_agent}*(opt_dist.result.est{opt_dist.nSteps}.y_bar_CI(:,i_agent));
-                            
+
                         end
                         %}
+=======
+>>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
                         [error_results{j_reg,i_prob,i_step}] = post_process_gold2();
                         if (error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_cent - error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_gold_vs_cent)> 0.001
                             disp('check')
@@ -120,17 +127,21 @@ for n_recept = n_receptors_array
         [error_(error_index,conv_index),mean_(error_index,conv_index)] = calc_composite_results_gold(error_results,length(range_reg),length(range_prob),range_step);
         time_array(error_index,conv_index) = mean(squeeze(time_));
         conv_index = conv_index + 1;
-       
+
         %disp('error_'); disp(error_)
     end
     error_index = error_index + 1;
 end
+<<<<<<< HEAD
 %{
+=======
+>>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
 assignin('base','mean_',mean_);%store variable in workspace
 assignin('base','error_',error_);
 assignin('base','n_receptors_array',n_receptors_array);
 assignin('base','converg_steps_array',converg_steps_array);
 assignin('base','time_array',time_array);
+<<<<<<< HEAD
 %}
 
 assignin('base','P_gold',P_gold);
@@ -140,5 +151,6 @@ assignin('base','x_gold',x_gold);
 assignin('base','x_ICI',x_ICI);
 assignin('base','x_Hybrid',x_Hybrid);
 %}
+=======
+>>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
 end
-
