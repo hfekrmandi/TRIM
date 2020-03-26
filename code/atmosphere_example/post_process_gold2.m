@@ -52,7 +52,11 @@ function error_mean = calc_error_stat(method)
 global opt_dist
 
 max_it = opt_dist.nSteps; 
-start_step = 2;%max_it - 3; %change
+if max_it < 3
+    start_step = 2;%2 for Ren; 
+else
+    start_step = max_it - 3;
+end
 P_cen = inv(opt_dist.result.est{1}.Y_cen);
 x_cen = P_cen*(opt_dist.result.est{1}.y_cen);
 x_gt =opt_dist.sim.gt.x_bar;

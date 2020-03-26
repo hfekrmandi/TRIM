@@ -11,8 +11,8 @@ dbstop if error
 
 % This is the size of the reduced atmospheric system
 reduced_dimention_size = 80;
-n_receptors_array = [10 40 100];%[10 15 20 25 30 40 50 60 70 80 90 100]; %%number of receptors or sensors array %min of 11 agents for full observability.
-converg_steps_array = [1 5 10 15 20 30 40 50 60];
+n_receptors_array = [10 30 60 100];%[10 15 20 25 30 40 50 60 70 80 90 100]; %%number of receptors or sensors array %min of 11 agents for full observability.
+converg_steps_array = [60]; %[1 5 10 15 20 30 40 50 60 80 100 120 140 160 180 200];
 error_index = 1; %initialising index for error_ variable.
 
 for n_recept = n_receptors_array
@@ -41,7 +41,7 @@ for n_recept = n_receptors_array
         % range_prob = [ 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
         % range_prob = [ 0.4 0.6 0.8  1];
         % range_prob = [ 0 0.2  0.4 0.6 0.8 1];
-        range_prob = [ 0.2 ];
+        range_prob = [ 0.02 ]; %0.2
 
         % range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
 
@@ -91,6 +91,21 @@ for n_recept = n_receptors_array
                         consenus_gold();
                         calc_super_gold_update();
                         time_(j_reg,i_prob,i_step) = toc;
+                        
+                        
+                        for i_agent=1:opt_dist.nAgents
+                            
+                            P_gold{error_index,i_step,i_agent} =  opt_dist.result.est_gold{i_agent}.P_bar ;
+                            x_gold{error_index,i_step,i_agent} = opt_dist.result.est_gold{i_agent}.x_bar ;
+                            
+                            P_Hybrid{error_index,i_step,i_agent} = inv(opt_dist.result.est{opt_dist.nSteps}.Y_bar(:,:,i_agent));
+                            x_Hybrid{error_index,i_step,i_agent} = P_Hybrid{error_index,i_step,i_agent}*(opt_dist.result.est{opt_dist.nSteps}.y_bar(:,i_agent));
+                            
+                            P_ICI{error_index,i_step,i_agent} = inv(opt_dist.result.est{opt_dist.nSteps}.Y_bar_CI(:,:,i_agent));
+                            x_ICI{error_index,i_step,i_agent} = P_ICI{error_index,i_step,i_agent}*(opt_dist.result.est{opt_dist.nSteps}.y_bar_CI(:,i_agent));
+                            
+                        end
+                        %}
                         [error_results{j_reg,i_prob,i_step}] = post_process_gold2();
                         if (error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_cent - error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_gold_vs_cent)> 0.001
                             disp('check')
@@ -110,10 +125,20 @@ for n_recept = n_receptors_array
     end
     error_index = error_index + 1;
 end
+%{
 assignin('base','mean_',mean_);%store variable in workspace
 assignin('base','error_',error_);
 assignin('base','n_receptors_array',n_receptors_array);
 assignin('base','converg_steps_array',converg_steps_array);
 assignin('base','time_array',time_array);
+%}
+
+assignin('base','P_gold',P_gold);
+assignin('base','P_ICI',P_ICI);
+assignin('base','P_Hybrid',P_Hybrid);
+assignin('base','x_gold',x_gold);
+assignin('base','x_ICI',x_ICI);
+assignin('base','x_Hybrid',x_Hybrid);
+%}
 end
 
