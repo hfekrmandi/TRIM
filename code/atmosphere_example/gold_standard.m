@@ -12,11 +12,11 @@ dbstop if error
 rng(0)
 
 % This is the size of the reduced atmospheric system
-reduced_dimention_size = 80;
-[A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size);
+% reduced_dimention_size = 80;
+% [A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size);
 
 % create_sys_gold(n,p,m) generates an n-th order model with p outputs and m inputs.
-% [A,x0,B,C] = create_sys_gold(2,2,1);
+[A,x0,B,C] = create_sys_gold(5,5,1);
 
 
 flag_converged = 0;
