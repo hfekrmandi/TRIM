@@ -108,7 +108,7 @@ rng(0)
         % opt_dist.result.consenus.Y_prior,opt_dist.result.consenus.y_prior
         % result.consenus.delta_I, result.consenus.delta_i
     % Outputs:
-        % result.est.Y_cen, result.est{}.y_cen
+        % result.est.Y_cen, result.est.y_cen
         % opt_dist.result.consenus.Y_prior,opt_dist.result.consenus.y_prior
         % result.consenus.delta_I, result.consenus.delta_i
         % result.est.Y_bar, result.est.y_bar
@@ -149,6 +149,7 @@ rng(0)
         % Value: Equivalent to sys.C
     % source
         % Q
+            % Description: Input (u)
             % Type: Float
     % fid_log
         % Type: Integer
@@ -207,6 +208,7 @@ rng(0)
             % Values: '1', '2'
     % motion
         % Q
+            % Description: Input (u)
             % Type: Float
     % Graphs
         % Type: Struct of GraphsGraph
@@ -215,11 +217,13 @@ rng(0)
     % result
         % gt
             % x_bar
+                % Description: Current system state estimate
                 % Type: Matrix (nx1)
         % prior
             % x_cen
                 % Type: Matrix (nx1)
             % P_cen
+                % Description: Previous time-step covariance of x_bar
                 % Type: Matrix (nxn)
             % x_bar
                 % Type: Matrix (nxp)
@@ -231,6 +235,7 @@ rng(0)
                 % Type: Matrix (nxn xp)
         % initial
             % x_bar
+                % Description: Initial system state estimate
                 % Type: Matrix (nxp)
             % P_bar
                 % Type: Matrix (nxn xp)
@@ -249,8 +254,10 @@ rng(0)
                 % Type: Matrix (nx1)
         % obs
             % h_cen
+                % Description: State estimates (same as x_bar?)
                 % Type: Matrix (px1)
             % H_cen
+                % Description: Matrix of measurable output variables (H)
                 % Type: Matrix (pxn)
             % id_vis_cen
                 % Type: Matrix (px1)
@@ -341,30 +348,34 @@ rng(0)
 %[A,x0,B,C] = create_sys_atmosphere_gold(reduced_dimention_size);
 
 % create_sys_gold(n,p,m) generates an n-th order model with p outputs and m inputs.
-[A,x0,B,C] = create_sys_gold(3,5,1);
+% [A,x0,B,C] = create_sys_gold(3,5,1);
+[A,x0,B,C] = cubesat_create_sys_test(3, 3, 3);
 
 
 flag_converged = 0;
 global fail_prob reg_deg
 % range_prob = [ 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
 % range_prob = [ 0.4 0.6 0.8  1];
-% range_prob = [ 0 0.2  0.4 0.6 0.8 1];
-range_prob = [ 0.2 ];
+range_prob = [ 0 0.2  0.4 0.6 0.8 1];
+% range_prob = [ 0.2 ];
 
 % range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
 
 % range_reg = [ 2 4 6 8];
-range_reg = [ 4];
+range_reg = [ 2];
 
 % range_prob = [ 1];
 problem_def_gold(A,B,C,x0);
+% opt_dist.scenario = '2';
 
 if strcmp(opt_dist.scenario, '1')
     for i_step = 1:5
         i_step
+        %opt_dist.result.gt.x_bar
         opt_dist.i_step = i_step;
         %     flag_converged = 0;
         sim_system_gold();
+        %opt_dist.result.gt.x_bar
         pred();
         consenus_gold();
         calc_super_gold_update();
@@ -394,6 +405,7 @@ else
                 pred();
                 consenus_gold();
                 calc_super_gold_update();
+                opt_dist.result.gt.x_bar
                 time_(j_reg,i_prob,i_step) = toc;
                 [error_results{j_reg,i_prob,i_step}] = post_process_gold2();
                 if (error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_cent - error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_gold_vs_cent)> 0.001
