@@ -51,16 +51,8 @@ for i_step = 1 : opt_dist.i_step
     delta_I = zeros(size(Y_bar));
     delta_i = zeros(size(y_bar));
     
-%     [size_group,nComponents,members] = networkComponents_gold(opt_dist.Graph_History{i_step});
-%     neigbours=members{nComponents(i_agent)};
-    [delta_I,delta_i] = collect_observations( connection_history{i_agent,opt_dist.i_step}.history,i_step,delta_I,delta_i);
+    [delta_I,delta_i] = collect_observations(connection_history{i_agent,opt_dist.i_step}.history,i_step,delta_I,delta_i);
     
-%     for i_neighbour = 1:numel(neigbours)
-%         H = opt_dist.result.obs.H{i_step,neigbours(i_neighbour)};
-%         z = opt_dist.sim.obs.z{i_step,neigbours(i_neighbour)};
-%         delta_I = delta_I + 1/(opt_dist.sim.obs.r_var{i_step,neigbours(i_neighbour)})*(H'*H);
-%         delta_i = delta_i +  1/(opt_dist.sim.obs.r_var{i_step,neigbours(i_neighbour)})*H'*z;
-%     end
     % update
     Y_update = Y_bar + delta_I;
     y_update = y_bar + delta_i;

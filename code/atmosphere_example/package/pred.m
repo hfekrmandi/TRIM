@@ -1,9 +1,6 @@
 function pred()
 global opt_dist
-% i_time = opt_dist.i_time;
 [opt_dist.result.pred.x_cen ,opt_dist.result.pred.P_cen] = f(opt_dist.result.prior.x_cen,opt_dist.result.prior.P_cen,0);
-% opt_dist.result.pred.x_cen = opt_dist.result.prior.x_cen;
-% opt_dist.result.pred.P_cen = opt_dist.result.prior.P_cen;
 
 opt_dist.result.pred.Y_cen = inv(opt_dist.result.pred.P_cen); %information matrix
 if opt_dist.FLAGS.debug
