@@ -38,18 +38,7 @@ for n_recept = n_receptors_array
         flag_converged = 0;
         global fail_prob reg_deg
 
-        % range_prob = [ 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
-        % range_prob = [ 0.4 0.6 0.8  1];
-        % range_prob = [ 0 0.2  0.4 0.6 0.8 1];
-<<<<<<< HEAD
         range_prob = [ 0.02 ]; %0.2
-=======
-        range_prob = [ 0.2 ];
->>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
-
-        % range_prob = [[0:0.2:0.4],[0.5:0.05:0.8],0.9,1];
-
-        % range_reg = [ 2 4 6 8];
         range_reg = [ 4];
 
         % range_prob = [ 1];
@@ -95,9 +84,6 @@ for n_recept = n_receptors_array
                         consenus_gold();
                         calc_super_gold_update();
                         time_(j_reg,i_prob,i_step) = toc;
-<<<<<<< HEAD
-
-
                         for i_agent=1:opt_dist.nAgents
 
                             P_gold{error_index,i_step,i_agent} =  opt_dist.result.est_gold{i_agent}.P_bar ;
@@ -110,9 +96,6 @@ for n_recept = n_receptors_array
                             x_ICI{error_index,i_step,i_agent} = P_ICI{error_index,i_step,i_agent}*(opt_dist.result.est{opt_dist.nSteps}.y_bar_CI(:,i_agent));
 
                         end
-                        %}
-=======
->>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
                         [error_results{j_reg,i_prob,i_step}] = post_process_gold2();
                         if (error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_cent - error_results{j_reg,i_prob,i_step}.error_Hybrid.e_BC_dist_gold_vs_cent)> 0.001
                             disp('check')
@@ -132,25 +115,17 @@ for n_recept = n_receptors_array
     end
     error_index = error_index + 1;
 end
-<<<<<<< HEAD
-%{
-=======
->>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
+
 assignin('base','mean_',mean_);%store variable in workspace
 assignin('base','error_',error_);
 assignin('base','n_receptors_array',n_receptors_array);
 assignin('base','converg_steps_array',converg_steps_array);
 assignin('base','time_array',time_array);
-<<<<<<< HEAD
-%}
-
 assignin('base','P_gold',P_gold);
 assignin('base','P_ICI',P_ICI);
 assignin('base','P_Hybrid',P_Hybrid);
 assignin('base','x_gold',x_gold);
 assignin('base','x_ICI',x_ICI);
 assignin('base','x_Hybrid',x_Hybrid);
-%}
-=======
->>>>>>> 2ee84e3e82b6eb3e65d3dbb1620b32f37c1fd33b
+
 end
