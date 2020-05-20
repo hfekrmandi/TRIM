@@ -1,0 +1,10 @@
+Temporal stabilizability & detectability analysis
+applied to two digital optimal control & LQG compensation
+examples presented in the paper:
+L.G. Van Willigenburg, W.L. De Koning, 2013,
+"Temporal and one-step stabilisability and detectability of
+ discrete time linear systems",
+IET Control Theory & Applications, 7, 1, 151-159
+Download this paper from:
+http://gvw007.yolasite.com/resources/TempOneIET2013.pdf
+Type/see readme for further information.
