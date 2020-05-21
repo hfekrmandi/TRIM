@@ -221,8 +221,6 @@ classdef agent < objectDefinition & agent_tools
             P = inv(S);
             x = P*y;
             
-            %F = (x - x_prior) * dt;
-            
             K = inv(S)*H'*inv(this.R);
             P_post = Q + F*inv(S)*F';
             S_post = inv(P_post);
