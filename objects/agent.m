@@ -202,10 +202,10 @@ classdef agent < objectDefinition & agent_tools
             %% 2x 2D agents
             
             % List of all variables and their dimensions:
-                % na = dim of agent 1 (making the observation)
-                % nb = dim of agent 2 (being observed)
-                % m = number of outputs
-                % Name              Paper symbol            Size
+                % na = dim of agent 1 (making the observation) (2)
+                % nb = dim of agent 2 (being observed) (2)
+                % m = number of outputs (1)
+                % Name              Paper symbol            Dimensions
                 % x_prior           x_k|k-1                 (na+nb) x    1
                 % x                 x_k|k                   (na+nb) x    1
                 % x_post            x_k+1|k                 (na+nb) x    1
