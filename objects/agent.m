@@ -199,11 +199,34 @@ classdef agent < objectDefinition & agent_tools
             assert(numel(observedObject.position) <= 3,'Expecting a position value to be [2x1].');
             assert(numel(observedObject.velocity) <= 3,'Expecting a velocity value to be [2x1].');
             
+            %% 2x 2D agents
+            
+            % List of all variables and their dimensions:
+                % na = dim of agent 1 (making the observation)
+                % nb = dim of agent 2 (being observed)
+                % m = number of outputs
+                % Name              Paper symbol            Size
+                % x_prior           x_k|k-1                 (na+nb) x    1
+                % x                 x_k|k                   (na+nb) x    1
+                % x_post            x_k+1|k                 (na+nb) x    1
+                % y_prior           y_k|k-1                 (na+nb) x    1
+                % y                 y_k|k                   (na+nb) x    1
+                % y_post            y_k+1|k                 (na+nb) x    1
+                % P_prior           P_k|k-1                 (na+nb) x (na+nb)
+                % P                 P_k|k                   (na+nb) x (na+nb)
+                % P_post            P_k+1|k                 (na+nb) x (na+nb)
+                % H                 H_k                     (na+nb) x    m
+                % F                 F_k                     (na+nb) x (na+nb)
+                % Q                 Q_k                     (na+nb) x (na+nb)
+                % R                 R_k                     (na+nb) x (na+nb)
+                % z                 z_k                        2    x    m
+                % K                 K_k                     (na+nb) x (na+nb)
+            
             logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
                 % The object is not in memory
-                P_prior = 0.5*eye(3);
-                x_prior = zeros(3,1);
+                P_prior = 0.5*eye(2);
+                x_prior = zeros(2,1);
                 y_prior = inv(P_prior)*x_prior;
             else
                 P_prior = this.MEMORY(logicalIDIndex).P(:);
