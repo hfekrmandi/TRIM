@@ -199,59 +199,97 @@ classdef agent < objectDefinition & agent_tools
             assert(numel(observedObject.position) <= 3,'Expecting a position value to be [2x1].');
             assert(numel(observedObject.velocity) <= 3,'Expecting a velocity value to be [2x1].');
             
-            %% 2x 2D agents
+            %% 2x 3D agents
             
             % List of all variables and their dimensions:
-                % na = dim of agent 1 (making the observation) (2)
-                % nb = dim of agent 2 (being observed) (2)
+                % n = dim of agents (3)
                 % m = number of outputs (1)
                 % Name              Paper symbol            Dimensions
-                % x_prior           x_k|k-1                 (na+nb) x    1
-                % x                 x_k|k                   (na+nb) x    1
-                % x_post            x_k+1|k                 (na+nb) x    1
-                % y_prior           y_k|k-1                 (na+nb) x    1
-                % y                 y_k|k                   (na+nb) x    1
-                % y_post            y_k+1|k                 (na+nb) x    1
-                % P_prior           P_k|k-1                 (na+nb) x (na+nb)
-                % P                 P_k|k                   (na+nb) x (na+nb)
-                % P_post            P_k+1|k                 (na+nb) x (na+nb)
-                % H                 H_k                     (na+nb) x    m
-                % F                 F_k                     (na+nb) x (na+nb)
-                % Q                 Q_k                     (na+nb) x (na+nb)
-                % R                 R_k                     (na+nb) x (na+nb)
-                % z                 z_k                        2    x    m
-                % K                 K_k                     (na+nb) x (na+nb)
+                % x_prior           x_k|k-1                 2n x 1
+                % x                 x_k|k                   2n x 1
+                % x_post            x_k+1|k                 2n x 1
+                % y_prior           y_k|k-1                 2n x 1
+                % y                 y_k|k                   2n x 1
+                % y_post            y_k+1|k                 2n x 1
+                % P_prior           P_k|k-1                 2n x 2n
+                % P                 P_k|k                   2n x 2n
+                % P_post            P_k+1|k                 2n x 2n
+                % H                 H_k                     2n x m
+                % F                 F_k                     2n x 2n
+                % Q                 Q_k                     2n x 2n
+                % R                 R_k                     2n x 2n
+                % z                 z_k                     2  x m
+                % K                 K_k                     2n x 2n
             
             logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
                 % The object is not in memory
-                P_prior = 0.5*eye(2);
-                x_prior = zeros(2,1);
-                y_prior = inv(P_prior)*x_prior;
+                n = 3;
+                P_prior = kron(eye(2), 0.5*eye(n));
+                %x_prior = kron(eye(2), zeros(2,1));
+                y_prior = zeros(2*n,1);%inv(P_prior)*x_prior;
             else
                 P_prior = this.MEMORY(logicalIDIndex).P(:);
-                x_prior = this.MEMORY(logicalIDIndex).x(:);
+                %x_prior = this.MEMORY(logicalIDIndex).x(:);
                 y_prior = this.MEMORY(logicalIDIndex).y(:);
             end
             
-            H = observedObject.H;
-            F = observedObject.F;
-            Q = observedObject.Q;
+            H = (observedObject.position/observedObject.range)';
             z = observedObject.range;
+            
+            %F_1 = this.F;
+            %F_2 = observedObject.F;
+            %zero = zeros(size(F_1, 1), size(F_2, 2));
+            %F = [F_1 zero; zero' F_2];
+            
+            %Q_1 = this.Q;
+            %Q_2 = observedObject.Q;
+            %Q = [Q_1 zero; zero' Q_2];
             
             y = y_prior + H'*inv(this.R)*z;
             S = inv(P_prior) + H'*inv(this.R)*H;
             P = inv(S);
-            x = P*y;
+            %x = P*y;
             
-            K = inv(S)*H'*inv(this.R);
+            %K = inv(S)*H'*inv(this.R);
             P_post = Q + F*inv(S)*F';
             S_post = inv(P_post);
             y_post = S_post*F*inv(S)*y;
-            x_post = inv(S_post)*y_post;
+            %x_post = inv(S_post)*y_post;
             observedObject.P = P_post;
-            observedObject.x = x_post;
+            observedObject.x = zeros();%x_post;
             observedObject.y = y_post;
+                
+%             logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
+%             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
+%                 % The object is not in memory
+%                 P_prior = 0.5*eye(2);
+%                 x_prior = zeros(2,1);
+%                 y_prior = inv(P_prior)*x_prior;
+%             else
+%                 P_prior = this.MEMORY(logicalIDIndex).P(:);
+%                 x_prior = this.MEMORY(logicalIDIndex).x(:);
+%                 y_prior = this.MEMORY(logicalIDIndex).y(:);
+%             end
+%             
+%             H = observedObject.H;
+%             F = observedObject.F;
+%             Q = observedObject.Q;
+%             z = observedObject.range;
+%             
+%             y = y_prior + H'*inv(this.R)*z;
+%             S = inv(P_prior) + H'*inv(this.R)*H;
+%             P = inv(S);
+%             x = P*y;
+%             
+%             K = inv(S)*H'*inv(this.R);
+%             P_post = Q + F*inv(S)*F';
+%             S_post = inv(P_post);
+%             y_post = S_post*F*inv(S)*y;
+%             x_post = inv(S_post)*y_post;
+%             observedObject.P = P_post;
+%             observedObject.x = x_post;
+%             observedObject.y = y_post;
             
 %             S = H*P_prior*H' + this.R;
 %             P = P_prior - P_prior*H'*inv(S)*H*P_prior;

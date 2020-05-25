@@ -507,7 +507,7 @@ switch SIMfirstObject.type
             % SPHERICAL REPRESENTATION
             observedRange     = norm(observedPosition);
             if SIMsecondObject.type == 1
-                % Jacobian for purely range observation model
+                % Observed object is an agent, grab the motion model and Q
                 observedP         = eye(3);
                 observedx         = zeros(3,1);
                 observedy         = zeros(3,1);
@@ -515,12 +515,12 @@ switch SIMfirstObject.type
                 observedF         = eye(3);
                 observedQ         = secondObject.Q;
             else
-                % Jacobian for purely range observation model
+                % Observed object is an immobile object, motion model and Q = 0
                 observedP         = eye(3);
                 observedx         = zeros(3,1);
                 observedy         = zeros(3,1);
                 observedH         = (observedPosition/observedRange)';
-                observedF         = eye(3);
+                observedF         = zeros(3);
                 observedQ         = 0;
             end
             observedElevation = asin(observedPosition(3)/observedRange);
