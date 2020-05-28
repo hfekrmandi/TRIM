@@ -202,34 +202,36 @@ classdef agent < objectDefinition & agent_tools
             %% 2x 3D agents
             
             % List of all variables and their dimensions:
-                % n = dim of agents (3)
-                % m = number of outputs (1)
-                % Name              Paper symbol            Dimensions
-                % x_prior           x_k|k-1                 2n x 1
-                % x                 x_k|k                   2n x 1
-                % x_post            x_k+1|k                 2n x 1
-                % y_prior           y_k|k-1                 2n x 1
-                % y                 y_k|k                   2n x 1
-                % y_post            y_k+1|k                 2n x 1
-                % P_prior           P_k|k-1                 2n x 2n
-                % P                 P_k|k                   2n x 2n
-                % P_post            P_k+1|k                 2n x 2n
-                % H                 H_k                     2n x m
-                % F                 F_k                     2n x 2n
-                % Q                 Q_k                     2n x 2n
-                % R                 R_k                     2n x 2n
-                % z                 z_k                     2  x m
-                % K                 K_k                     2n x 2n
+                % n = dim of each agent
+                % N = total number of agents
+                % o = number of observations
+                % m = number of outputs per observation
+                % Name              Paper symbol        Dimensions
+                % x_prior           x_k|k-1             (N*n) x   1
+                % x                 x_k|k               (N*n) x   1
+                % x_post            x_k+1|k             (N*n) x   1
+                % y_prior           y_k|k-1             (N*n) x   1
+                % y                 y_k|k               (N*n) x   1
+                % y_post            y_k+1|k             (N*n) x   1
+                % P_prior           P_k|k-1             (N*n) x (N*n)
+                % P                 P_k|k               (N*n) x (N*n)
+                % P_post            P_k+1|k             (N*n) x (N*n)
+                % H                 H_k                 (N*n) x   o
+                % F                 F_k                 (N*n) x (N*n)
+                % Q                 Q_k                 (N*n) x (N*n)
+                % R                 R_k                 (N*n) x (N*n)
+                % z                 z_k                   2   x   o
+                % K                 K_k                 (N*n) x (N*n)
             
             logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
                 % The object is not in memory
                 n = 3;
-                P_prior = kron(eye(2), 0.5*eye(n));
+                S_prior = kron(eye(2), 0.5*eye(n));
                 %x_prior = kron(eye(2), zeros(2,1));
                 y_prior = zeros(2*n,1);%inv(P_prior)*x_prior;
             else
-                P_prior = this.MEMORY(logicalIDIndex).P(:);
+                S_prior = this.MEMORY(logicalIDIndex).P(:);
                 %x_prior = this.MEMORY(logicalIDIndex).x(:);
                 y_prior = this.MEMORY(logicalIDIndex).y(:);
             end
@@ -247,8 +249,8 @@ classdef agent < objectDefinition & agent_tools
             %Q = [Q_1 zero; zero' Q_2];
             
             y = y_prior + H'*inv(this.R)*z;
-            S = inv(P_prior) + H'*inv(this.R)*H;
-            P = inv(S);
+            S = S_prior + H'*inv(this.R)*H;
+            %P = inv(S);
             %x = P*y;
             
             %K = inv(S)*H'*inv(this.R);
@@ -256,7 +258,7 @@ classdef agent < objectDefinition & agent_tools
             S_post = inv(P_post);
             y_post = S_post*F*inv(S)*y;
             %x_post = inv(S_post)*y_post;
-            observedObject.P = P_post;
+            observedObject.S = S_post;
             observedObject.x = zeros();%x_post;
             observedObject.y = y_post;
                 
