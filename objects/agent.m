@@ -30,6 +30,8 @@ classdef agent < objectDefinition & agent_tools
         DATA;                           % The output container for agent-side data.
         
         % DSE Variables
+        dim_obs = 1;
+        dim_state = 2;
         R;
         Q;
     end
@@ -58,8 +60,8 @@ classdef agent < objectDefinition & agent_tools
             % Assign defaults
             this.radius = 0.5;                      % Default radius (m)
             this.localState = zeros(12,1);          % Assign state
-            this.R = 0.1;
-            this.Q = 0.1;
+            this.R = 0.1*eye(this.dim_obs);
+            this.Q = 0.1*eye(this.dim_state);
             
             % //////////////// Check for user overrides ///////////////////
             % - It is assumed that overrides to the properties are provided
@@ -157,14 +159,16 @@ classdef agent < objectDefinition & agent_tools
             assert(isnumeric(ENV.dt),'The time-step must be a numeric timestep.');
             assert(isstruct(observedobjects),'Second parameter is a vector of observation structures.');
             
+%             sensedobject = this.ObsvModel(ENV.dt,observedobjects);
+%             this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
             % Update agent memory structure
             for entry = 1:numel(observedobjects)
                 
                 % Apply observation model
-                sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
+                %sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
                 
                 % Apply sensor model if there is one
-                %sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
+                sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
                 % Update memory structure from measurements
                 this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
             end
@@ -195,9 +199,9 @@ classdef agent < objectDefinition & agent_tools
             % sensor model through which all objects are processed.
             
             % Input sanity check
-            assert(isnumeric(dt) && numel(dt) == 1,'The time step value is invalid.');
-            assert(numel(observedObject.position) <= 3,'Expecting a position value to be [2x1].');
-            assert(numel(observedObject.velocity) <= 3,'Expecting a velocity value to be [2x1].');
+            %assert(isnumeric(dt) && numel(dt) == 1,'The time step value is invalid.');
+            %assert(numel(observedObject.position) <= 3,'Expecting a position value to be [2x1].');
+            %assert(numel(observedObject.velocity) <= 3,'Expecting a velocity value to be [2x1].');
             
             %% 2x 3D agents
             
@@ -222,82 +226,87 @@ classdef agent < objectDefinition & agent_tools
                 % R                 R_k                 (N*n) x (N*n)
                 % z                 z_k                   2   x   o
                 % K                 K_k                 (N*n) x (N*n)
+            n = 1 + numel(observedObject);
             
-            logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
+            logicalIDIndex = [this.MEMORY.objectID] == observedObject(1).objectID;  % Appearance of object ID in memory
             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
                 % The object is not in memory
-                n = 3;
-                S_prior = kron(eye(2), 0.5*eye(n));
+                Y_11 = 0.5*eye(n*this.dim_state);
                 %x_prior = kron(eye(2), zeros(2,1));
-                y_prior = zeros(2*n,1);%inv(P_prior)*x_prior;
+                y_11 = 1:n*this.dim_state';%inv(P_prior)*x_prior;
             else
-                S_prior = this.MEMORY(logicalIDIndex).P(:);
+                Y_11 = this.MEMORY(logicalIDIndex).Y(:);
                 %x_prior = this.MEMORY(logicalIDIndex).x(:);
-                y_prior = this.MEMORY(logicalIDIndex).y(:);
+                y_11 = this.MEMORY(logicalIDIndex).y(:);
             end
             
-            H = (observedObject.position/observedObject.range)';
-            z = observedObject.range;
+            % What we need:
+            %   Pre-determined number of agents
+            %   Pre-determined F for each ID
+            %   Pre-determined Q for each ID
+            %   R defined for each individual measurement
+            % X Good H equation
             
-            %F_1 = this.F;
-            %F_2 = observedObject.F;
-            %zero = zeros(size(F_1, 1), size(F_2, 2));
-            %F = [F_1 zero; zero' F_2];
+            F_0 = zeros(n*this.dim_state);
+            Q_0 = zeros(n*this.dim_state);
+            R_0 = zeros(n*this.dim_obs);
+            H_0 = zeros(n*this.dim_obs, n*this.dim_state);
+            z_0 = zeros(n*this.dim_obs,1);
             
-            %Q_1 = this.Q;
-            %Q_2 = observedObject.Q;
-            %Q = [Q_1 zero; zero' Q_2];
+            agent1 = 1;
+            x = inv(Y_11)*y_11;
+            for entry = 1:numel(observedobjects)
+                agent2 = 3;
+                Hz = vertcat(Hz, this.Hz_range_2d(x, agent1, agent2));
+            end
+            % Testing values
+            F_input = eye(this.dim_state);
+            Q_input = 0.1*eye(this.dim_state);
+            R_input = 0.1*eye(this.dim_obs);
+            H_input = ones(this.dim_obs, n*this.dim_state);
+            z_input = ones(this.dim_obs, 1);
             
-            y = y_prior + H'*inv(this.R)*z;
-            S = S_prior + H'*inv(this.R)*H;
-            %P = inv(S);
-            %x = P*y;
+            F_0 = zeros(n*this.dim_state);
+            Q_0 = zeros(n*this.dim_state);
+            R_0 = zeros(n*this.dim_obs);
+            z_0 = zeros(n*this.dim_obs,1);
             
-            %K = inv(S)*H'*inv(this.R);
-            P_post = Q + F*inv(S)*F';
-            S_post = inv(P_post);
-            y_post = S_post*F*inv(S)*y;
-            %x_post = inv(S_post)*y_post;
-            observedObject.S = S_post;
-            observedObject.x = zeros();%x_post;
-            observedObject.y = y_post;
+            % Incorrect definitions for testing
+            for i = 1:nAgents
+                z_block = zeros(i*this.dim_state,this.dim_state);
+                if ismember(i, observedAgents.IDs)
+                    i_state = this.dim_state*(i - 1) + 1;
+                    i_obs = this.dim_obs*(i - 1) + 1;
+                    %F_0(:,i_state:i_state+1) = F_input(:,i_state:i_state+1);
+                    %Q_0(:,i_state:i_state+1) = Q_input(:,i_state:i_state+1);
+                    %R_0(:,i_state:i_state+1) = R_input(:,i_state:i_state+1);
+                    %H_0(i_obs,:) = H_input(i_obs,:);
+                    %z_0(:,i_state:i_state+1) = z_input(:,i_state:i_state+1);
+                end
+            end
+            
+            z_val = sqrt((x_true(3) - x_true(1))^2 + (x_true(4) - x_true(2))^2);
+            z = [z_val; z_val] + mvnrnd([0, 0], R_0)';
+
+%             H_0 = [(x_11(1) - x_11(3))/z(1), (x_11(2) - x_11(4))/z(1), ...
+%                  (x_11(3) - x_11(1))/z(1), (x_11(4) - x_11(2))/z(1);...
+%                  (x_11(1) - x_11(3))/z(2), (x_11(2) - x_11(4))/z(2),...
+%                  (x_11(3) - x_11(1))/z(2), (x_11(4) - x_11(2))/z(2)];
+%             SBZ = z - H_0*x_11;
+
+            M_0 = inv(F_0)'*Y_11*inv(F_0);
+            C_0 = M_0*inv(M_0+inv(Q_0));
+            L_0 = eye(4) - C_0;
+            Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
+            y_01 = L_0*inv(F)'*y_11;
+            
+            % Consensus Steps
+            Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
+            y_00 = y_01 + H_0'*inv(R_0)*z;
+            
+            observedObject.Y = Y_00;
+            observedObject.y = y_00;
                 
-%             logicalIDIndex = [this.MEMORY.objectID] == observedObject.objectID;  % Appearance of object ID in memory
-%             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
-%                 % The object is not in memory
-%                 P_prior = 0.5*eye(2);
-%                 x_prior = zeros(2,1);
-%                 y_prior = inv(P_prior)*x_prior;
-%             else
-%                 P_prior = this.MEMORY(logicalIDIndex).P(:);
-%                 x_prior = this.MEMORY(logicalIDIndex).x(:);
-%                 y_prior = this.MEMORY(logicalIDIndex).y(:);
-%             end
-%             
-%             H = observedObject.H;
-%             F = observedObject.F;
-%             Q = observedObject.Q;
-%             z = observedObject.range;
-%             
-%             y = y_prior + H'*inv(this.R)*z;
-%             S = inv(P_prior) + H'*inv(this.R)*H;
-%             P = inv(S);
-%             x = P*y;
-%             
-%             K = inv(S)*H'*inv(this.R);
-%             P_post = Q + F*inv(S)*F';
-%             S_post = inv(P_post);
-%             y_post = S_post*F*inv(S)*y;
-%             x_post = inv(S_post)*y_post;
-%             observedObject.P = P_post;
-%             observedObject.x = x_post;
-%             observedObject.y = y_post;
-            
-%             S = H*P_prior*H' + this.R;
-%             P = P_prior - P_prior*H'*inv(S)*H*P_prior;
-%             observedobject.x = x_prior + (P*H'*inv(this.R))*F;% - (P*inv(P_prior)*(x-x_prior)) % (Last part only for multiple iterations)
-%             observedobject.P = P;
-            
 %             % Get measurements from a camera
 %             [psi_j,theta_j,alpha_j] = this.GetCameraMeasurements(observedObject);
 %             % Override ideal parameters with camera model
@@ -306,6 +315,26 @@ classdef agent < objectDefinition & agent_tools
 %             observedObject.width = alpha_j;
 %             % Get the range estimate
 %             [observedObject.range] = this.GetRangeFinderMeasurements(observedObject);
+        end
+        
+        function [Hz] = Hz_range_2d(this, x, agent1, agent2)
+            n = 2;
+            
+            agent1_x = n*(agent1 - 1) + 1;
+            agent1_y = agent1_x + (n - 1);
+            agent2_x = n*(agent2 - 1) + 1;
+            agent2_y = agent2_x + (n - 1);
+            
+            n_states = size(x,1);
+            set_1 = zeros(n_states);
+            set_2 = zeros(n_states);
+            
+            set_1(agent1_x:agent1_y,agent1_x:agent1_y) = eye(n);
+            set_1(agent2_x:agent2_y,agent2_x:agent2_y) = eye(n);
+            set_2(agent1_x:agent1_y,agent2_x:agent2_y) = eye(n);
+            set_2(agent2_x:agent2_y,agent1_x:agent1_y) = eye(n);
+            
+            Hz = (set_1*x - set_2*x)';
         end
     end
     

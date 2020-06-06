@@ -508,18 +508,12 @@ switch SIMfirstObject.type
             observedRange     = norm(observedPosition);
             if SIMsecondObject.type == 1
                 % Observed object is an agent, grab the motion model and Q
-                observedP         = eye(3);
-                observedx         = zeros(3,1);
-                observedy         = zeros(3,1);
-                observedH         = (observedPosition/observedRange)';
+                observedz         = norm(observedPosition);
                 observedF         = eye(3);
                 observedQ         = secondObject.Q;
             else
                 % Observed object is an immobile object, motion model and Q = 0
-                observedP         = eye(3);
-                observedx         = zeros(3,1);
-                observedy         = zeros(3,1);
-                observedH         = (observedPosition/observedRange)';
+                observedz         = norm(observedPosition);
                 observedF         = zeros(3);
                 observedQ         = 0;
             end
@@ -579,11 +573,7 @@ switch SIMfirstObject.type
                                      'radius',observedRadius,...                        % The objects true size
                                      'position',observedPosition(dimensionIndices,1),...% The apparent position in the relative frame
                                      'velocity',observedVelocity(dimensionIndices,1),...% The apparent velocity in the relative frame
-                                     'range',observedRange,...                          % The apparent range
-                                     'P',observedP,...                                  % The measurement covariance matrix
-                                     'x',observedx,...                                  % The position measurement
-                                     'y',observedy,...                                  % The information vector
-                                     'H',observedH,...                                  % The measurement model jacobian
+                                     'range',observedz,...                          % The apparent range
                                      'F',observedF,...                                  % The motion model jacobian
                                      'Q',observedQ,...                                  % The motion model covariance
                                      'elevation',observedElevation,...                  % The apparent inclination angle

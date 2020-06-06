@@ -5,7 +5,7 @@ clear all; close all;
 % ADD THE PROGRAM PATHS
 addpath('environment');
 addpath('objects');  
-addpath('toolboxes');
+%addpath('toolboxes');
 addpath('scenarios'); 
 
 % CODE DEBUG COMMANDS %
@@ -35,7 +35,7 @@ sim_publishFigures = false;
 sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 2;
+sim_agentNumber     = 3;
 sim_agentRadius     = 0.2;
 sim_agentOrbit      = 10;
 sim_agentVelocity   = 5;
