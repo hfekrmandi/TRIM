@@ -161,10 +161,10 @@ classdef agent < objectDefinition & agent_tools
             for entry = 1:numel(observedobjects)
                 
                 % Apply observation model
-                sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
+                %sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
                 
                 % Apply sensor model if there is one
-                %sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
+                sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
                 % Update memory structure from measurements
                 this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
             end
