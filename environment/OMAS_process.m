@@ -509,12 +509,12 @@ switch SIMfirstObject.type
             if SIMsecondObject.type == 1
                 % Observed object is an agent, grab the motion model and Q
                 observedz         = norm(observedPosition);
-                observedF         = eye(3);
+                observedF         = eye(2);
                 observedQ         = secondObject.Q;
             else
                 % Observed object is an immobile object, motion model and Q = 0
                 observedz         = norm(observedPosition);
-                observedF         = zeros(3);
+                observedF         = zeros(2);
                 observedQ         = 0;
             end
             observedElevation = asin(observedPosition(3)/observedRange);
@@ -576,6 +576,7 @@ switch SIMfirstObject.type
                                      'range',observedz,...                          % The apparent range
                                      'F',observedF,...                                  % The motion model jacobian
                                      'Q',observedQ,...                                  % The motion model covariance
+                                     'id_list',[],...                                  % The motion model covariance
                                      'elevation',observedElevation,...                  % The apparent inclination angle
                                      'heading',observedHeading,...                      % The apparent Azimuth angle
                                      'width',observedAngularWidth,...                   % The apparent angular width at that range    
