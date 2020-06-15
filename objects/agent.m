@@ -65,6 +65,9 @@ classdef agent < objectDefinition & agent_tools
             this.localState = zeros(12,1);          % Assign state
             this.R = 0.1*eye(this.dim_obs);
             this.Q = 0.1*eye(this.dim_state);
+            this.memory_id_list = [this.objectID];
+            this.memory_Y = 0.5*eye(this.dim_state);
+            this.memory_y = (1:this.dim_state)';
             
             % //////////////// Check for user overrides ///////////////////
             % - It is assumed that overrides to the properties are provided
@@ -122,7 +125,7 @@ classdef agent < objectDefinition & agent_tools
             
             % /////////////////// WAYPOINT TRACKING ///////////////////////
             % Design the current desired trajectory from the waypoint.
-            %[headingVector] = this.GetTargetHeading();
+            [headingVector] = this.GetTargetHeading();
             desiredVelocity = headingVector*this.v_nominal;
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,19 +165,29 @@ classdef agent < objectDefinition & agent_tools
             assert(isnumeric(ENV.dt),'The time-step must be a numeric timestep.');
             assert(isstruct(observedobjects),'Second parameter is a vector of observation structures.');
             
-%             sensedobject = this.ObsvModel(ENV.dt,observedobjects);
-%             %this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
-            % Update agent memory structure
-            for entry = 1:numel(observedobjects)
-                
-                % Apply observation model
-                %sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
-                
-                % Apply sensor model if there is one
-                sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
-                % Update memory structure from measurements
-                this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
+            estimatedobjects = this.ObsvModel(ENV.dt,observedobjects);
+            
+            for entry = 1:numel(estimatedobjects)
+                this = this.UpdateMemoryFromObject(ENV.currentTime, estimatedobjects(entry));
             end
+            %this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
+            
+%             % PULL MEMORY ITEMS FOR LATER MANIPULATION
+%             agentSet    = sensedobjects([sensedobjects.type] == OMAS_objectType.agent);
+%             waypointSet = sensedobjects([sensedobjects.type] == OMAS_objectType.waypoint);
+%             obstacleSet = sensedobjects([sensedobjects.type] == OMAS_objectType.obstacle); % Differenciate between the different object types
+%             
+%             % Update agent memory structure
+%             for entry = 1:numel(observedobjects)
+%                 
+%                 % Apply observation model
+%                 %sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
+%                 
+%                 % Apply sensor model if there is one
+%                 sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
+%                 % Update memory structure from measurements
+%                 this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
+%             end
             
             % SORT object SET BY PRIORITY
             [this] = this.UpdateMemoryOrderByField('priority');
@@ -197,7 +210,7 @@ classdef agent < objectDefinition & agent_tools
      %% //////////////////////// OBSERVATION FUNCTIONS /////////////////////////
     methods
         % Observation MODEL - TOP LEVEL (Default)
-        function [observedObject] = ObsvModel(this,dt,observedObject)
+        function [estimatedObjects] = ObsvModel(this,dt,observedObjects)
             % This function provides an overridable method resembling the
             % sensor model through which all objects are processed.
             
@@ -227,10 +240,11 @@ classdef agent < objectDefinition & agent_tools
                 % R_0               R_k                 (m*o) x (m*o)
                 % Q_0               Q_k                 (N*n) x (N*n)
             
-            n = 1 + numel(observedObject);
+            n = 1 + numel(observedObjects);
             
             Y_11 = this.memory_Y;
             y_11 = this.memory_y;
+            x_11 = inv(Y_11)*y_11;
             id_list = this.memory_id_list;
             
 %             logicalIDIndex = [this.MEMORY.objectID] == observedObject(1).objectID;  % Appearance of object ID in memory
@@ -271,59 +285,61 @@ classdef agent < objectDefinition & agent_tools
             %   Send results to consensus function
             %       How does this function reconcile agents with no information?
             
-            n_stored = numel(id_list);
-            
-            F_0 = zeros(n_stored*this.dim_state);
-            Q_0 = 0.01*eye(n_stored*this.dim_state);
-            R_0 = 0.01*eye(n_stored*this.dim_obs);
-            H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
-            z_0 = zeros(n_stored*this.dim_obs,1);
-            
             %agent1 = 1;
             %x = inv(Y_11)*y_11;
             %Hz = [];
             %F = [];
             
-            observed_ids = 1:numel(observedObject);
-            for i = 1:numel(observedObject)
-                observed_ids(i) = observedObject(i).objectID;
+            observed_ids = 1:numel(observedObjects);
+            for i = 1:numel(observedObjects)
+                observed_ids(i) = observedObjects(i).objectID;
             end
             
             for i = 1:numel(observed_ids)
                 id = observed_ids(i);
-                if ismember(id, id_list)
-                    j = find(id_list==id);
-                    i_low = this.dim_state*(j - 1) + 1;
-                    i_high = this.dim_state*(j - 1) + this.dim_state;
-                    
-                    F_0(i_low:i_high,i_low:i_high) = observedObject.F;
-                    %H_0(i_obs,:) = H_input(i_obs,:);
-                    z_0(i,1:this.dim_obs) = observedObject.z;
-                elseif numel(id_list) == 0
-                    F_0 = observedObject.F;
-                    Q_0 = 0.01*eye(this.dim_state);
-                    R_0 = 0.01*eye(this.dim_obs);
-                    %H_0 = observedObject.H;
-                    z_0 = observedObject.z;
-                    
+                if ~ismember(id, id_list)
                     id_list = horzcat(id_list, id);
-                    n_stored = numel(id_list);
-                else
-                    j = numel(id_list);
-                    z_state_block = zeros(j*this.dim_state,this.dim_state);
-                    z_obs_block = zeros(j*this.dim_obs,this.dim_obs);
-                    z_z_block = zeros(j*(this.dim_obs-1),(this.dim_obs-1));
-                    %F_0 = [F_0, z_state_block; z_state_block', observedObject(i).F];
-                    F_0 = vertcat(horzcat(F_0, z_state_block), horzcat(z_state_block', observedObject(i).F));
-                    Q_0 = vertcat(horzcat(Q_0, z_state_block), horzcat(z_state_block', 0.01*eye(this.dim_state)));
-                    R_0 = vertcat(horzcat(R_0, z_obs_block), horzcat(z_obs_block', 0.01*eye(this.dim_obs)));
-                    %H_0 = vertcat(horzcat(F_0, z_block), horzcat(z_block', observedObject.F));
-                    z_0 = vertcat(horzcat(z_0, z_z_block), horzcat(z_z_block', observedObject(i).z));
+                    dim = size(y_11,1) + this.dim_state;
                     
-                    id_list = horzcat(id_list, id);
-                    n_stored = numel(id_list);
+                    tmp = 0.5*eye(dim);
+                    tmp(1:size(Y_11,1), 1:size(Y_11)) = Y_11;
+                    Y_11 = tmp;
+                    
+                    tmp = (1:dim)';
+                    tmp(1:size(y_11,1)) = y_11;
+                    y_11 = tmp;
+                    
+                    x_11 = inv(Y_11)*y_11;
                 end
             end
+            
+            n_stored = numel(id_list);
+            n_obs = numel(observedObjects);
+            
+            F_0 = zeros(n_stored*this.dim_state);
+            Q_0 = 0.01*eye(n_stored*this.dim_state);
+            R_0 = 0.01*eye(n_stored*this.dim_obs);
+            H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
+            z_0 = ones(n_stored*this.dim_obs,1);
+            
+            for i = 1:numel(observed_ids)
+                id = observed_ids(i);
+                j = find(id_list==id);
+                j_this = find(id_list==this.objectID);
+                H_0(j,:) = this.Hz_range_2d(x_11, j_this, j);
+                z_0(j) = observedObjects(i).range;
+            end
+            
+            for i = 1:numel(id_list)
+                id = id_list(i);
+                i_low = this.dim_state*(i - 1) + 1;
+                i_high = this.dim_state*(i - 1) + this.dim_state;
+
+                F_0(i_low:i_high,i_low:i_high) = this.F_2d(x_11, i);
+            end
+            
+            H_0 = H_0 ./ z_0;
+            tmp = 0;
 %             
 %             for entry = 1:numel(observedObject)
 %                 agent2 = 3;
@@ -335,41 +351,81 @@ classdef agent < objectDefinition & agent_tools
 %             end
 %             H_0 = Hz ./ z;
             
-%             M_0 = inv(F_0)'*Y_11*inv(F_0);
-%             C_0 = M_0*inv(M_0+inv(Q_0));
-%             L_0 = eye(4) - C_0;
-%             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
-%             y_01 = L_0*inv(F)'*y_11;
-%             
-%             % Consensus Steps
-%             Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
-%             y_00 = y_01 + H_0'*inv(R_0)*z;
+            M_0 = inv(F_0)'*Y_11*inv(F_0);
+            C_0 = M_0*inv(M_0+inv(Q_0));
+            L_0 = eye(size(C_0,1)) - C_0;
+            Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
+            y_01 = L_0*inv(F_0)'*y_11;
+            
+            % Consensus Steps
+            Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
+            y_00 = y_01 + H_0'*inv(R_0)*z_0;
+            
+            x_00 = inv(Y_00)*y_00;
 %             
 %             observedObject.Y = Y_00;
 %             observedObject.y = y_00;
-            this.memory_Y = eye(2);
-            this.memory_y = eye(1);
+            this.memory_Y = Y_00;
+            this.memory_y = y_00;
             this.memory_id_list = id_list;
+            
+            estimatedObjects = observedObjects;
+            for i = numel(estimatedObjects)
+                id = estimatedObjects(i).objectID;
+                my_pos = [this.state_from_id(x_00, id_list, this.objectID); 0];
+                pos = estimatedObjects(i).position;
+                est_pos = [this.state_from_id(x_00, id_list, id); 0];
+                true_range = norm(pos)
+                est_range = norm(my_pos - est_pos)
+                estimatedObjects(i).position = est_pos;
+            end
+        end
+        
+        function [ret] = state_from_id(this, x, id_list, id)
+            j = find(id_list==id);
+            i_low = this.dim_state*(j - 1) + 1;
+            i_high = this.dim_state*(j - 1) + this.dim_state;
+            ret = x(i_low:i_high);
         end
         
         function [Hz] = Hz_range_2d(this, x, agent1, agent2)
             n = 2;
-            
+
             agent1_x = n*(agent1 - 1) + 1;
             agent1_y = agent1_x + (n - 1);
             agent2_x = n*(agent2 - 1) + 1;
             agent2_y = agent2_x + (n - 1);
-            
+
             n_states = size(x,1);
             set_1 = zeros(n_states);
             set_2 = zeros(n_states);
-            
+
             set_1(agent1_x:agent1_y,agent1_x:agent1_y) = eye(n);
             set_1(agent2_x:agent2_y,agent2_x:agent2_y) = eye(n);
             set_2(agent1_x:agent1_y,agent2_x:agent2_y) = eye(n);
             set_2(agent2_x:agent2_y,agent1_x:agent1_y) = eye(n);
-            
+
             Hz = (set_1*x - set_2*x)';
+        end
+
+        function [z] = z_range_2d(this, x, agent1, agent2)
+            n = 2;
+
+            agent1_x = n*(agent1 - 1) + 1;
+            agent1_y = agent1_x + (n - 1);
+            agent2_x = n*(agent2 - 1) + 1;
+            agent2_y = agent2_x + (n - 1);
+
+            n_states = size(x,1);
+            set_1 = zeros(n_states);
+            set_2 = zeros(n_states);
+
+            set_1(agent1_x:agent1_y,agent1_x:agent1_y) = eye(n);
+            %set_1(agent2_x:agent2_y,agent2_x:agent2_y) = eye(n);
+            set_2(agent1_x:agent1_y,agent2_x:agent2_y) = eye(n);
+            %set_2(agent2_x:agent2_y,agent1_x:agent1_y) = eye(n);
+
+            z = sqrt((set_1*x - set_2*x)'*(set_1*x - set_2*x));
         end
         
         function [F] = F_2d(this, x, agent1, agent2)
