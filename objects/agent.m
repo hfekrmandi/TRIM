@@ -166,22 +166,12 @@ classdef agent < objectDefinition & agent_tools
             assert(isstruct(observedobjects),'Second parameter is a vector of observation structures.');
             
             estimatedobjects = this.ObsvModel(ENV.dt,observedobjects);
-            
             for entry = 1:numel(estimatedobjects)
                 this = this.UpdateMemoryFromObject(ENV.currentTime, estimatedobjects(entry));
             end
-            %this = this.UpdateMemoryFromObject(ENV.currentTime,sensedobject);
             
-%             % PULL MEMORY ITEMS FOR LATER MANIPULATION
-%             agentSet    = sensedobjects([sensedobjects.type] == OMAS_objectType.agent);
-%             waypointSet = sensedobjects([sensedobjects.type] == OMAS_objectType.waypoint);
-%             obstacleSet = sensedobjects([sensedobjects.type] == OMAS_objectType.obstacle); % Differenciate between the different object types
-%             
 %             % Update agent memory structure
 %             for entry = 1:numel(observedobjects)
-%                 
-%                 % Apply observation model
-%                 %sensedobject = this.ObsvModel(ENV.dt,observedobjects(entry));
 %                 
 %                 % Apply sensor model if there is one
 %                 sensedobject = this.SensorModel(ENV.dt,observedobjects(entry));
@@ -247,20 +237,6 @@ classdef agent < objectDefinition & agent_tools
             x_11 = inv(Y_11)*y_11;
             id_list = this.memory_id_list;
             
-%             logicalIDIndex = [this.MEMORY.objectID] == observedObject(1).objectID;  % Appearance of object ID in memory
-%             if (numel(this.MEMORY) == 1 & this.MEMORY(1).objectID == 0) | logicalIDIndex == 0
-%                 % The object is not in memory
-%                 Y_11 = 0.5*eye(n*this.dim_state);
-%                 %x_prior = kron(eye(2), zeros(2,1));
-%                 y_11 = (1:n*this.dim_state)';%inv(P_prior)*x_prior;
-%                 id_list = [];
-%             else
-%                 Y_11 = this.MEMORY(logicalIDIndex).Y(:);
-%                 %x_prior = this.MEMORY(logicalIDIndex).x(:);
-%                 y_11 = this.MEMORY(logicalIDIndex).y(:);
-%                 id_list = this.MEMORY(logicalIDIndex).id_list(:);
-%             end
-            
             % Pseudocode
             %   Define all matrices and vectors
             %           How do we keep track of agents we've seen?
@@ -285,16 +261,14 @@ classdef agent < objectDefinition & agent_tools
             %   Send results to consensus function
             %       How does this function reconcile agents with no information?
             
-            %agent1 = 1;
-            %x = inv(Y_11)*y_11;
-            %Hz = [];
-            %F = [];
             
+            % Collect the IDs of the objects observed at this time step
             observed_ids = 1:numel(observedObjects);
             for i = 1:numel(observedObjects)
                 observed_ids(i) = observedObjects(i).objectID;
             end
             
+            % If an agent was observed for the first time, grow the state variables to match
             for i = 1:numel(observed_ids)
                 id = observed_ids(i);
                 if ~ismember(id, id_list)
@@ -313,6 +287,7 @@ classdef agent < objectDefinition & agent_tools
                 end
             end
             
+            % Create variables for the information filter
             n_stored = numel(id_list);
             n_obs = numel(observedObjects);
             
@@ -322,6 +297,7 @@ classdef agent < objectDefinition & agent_tools
             H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
             z_0 = ones(n_stored*this.dim_obs,1);
             
+            % For each observed agent, compute H and z
             for i = 1:numel(observed_ids)
                 id = observed_ids(i);
                 j = find(id_list==id);
@@ -329,7 +305,10 @@ classdef agent < objectDefinition & agent_tools
                 H_0(j,:) = this.Hz_range_2d(x_11, j_this, j);
                 z_0(j) = observedObjects(i).range;
             end
+            % It's easier to compute Hz and divide by z instead of directly computing H
+            H_0 = H_0 ./ z_0;
             
+            % For each agent, update F
             for i = 1:numel(id_list)
                 id = id_list(i);
                 i_low = this.dim_state*(i - 1) + 1;
@@ -338,19 +317,7 @@ classdef agent < objectDefinition & agent_tools
                 F_0(i_low:i_high,i_low:i_high) = this.F_2d(x_11, i);
             end
             
-            H_0 = H_0 ./ z_0;
-            tmp = 0;
-%             
-%             for entry = 1:numel(observedObject)
-%                 agent2 = 3;
-%                 tmp = observedObject(entry).objectID;
-%                 Hz = vertcat(Hz, this.Hz_range_2d(x, agent1, observedObject(entry).objectID));
-%                 F_agent = this.F_2d(x, agent1, entry);
-%                 F = horzcat(F, zeros(size(F, 1), size(F_agent, 1)));
-%                 F = vertcat(F, [zeros(size(F, 1)-size(F_aenet, 1), size(F_agent, 1)), F_agent]);
-%             end
-%             H_0 = Hz ./ z;
-            
+            % Compute the information filter steps
             M_0 = inv(F_0)'*Y_11*inv(F_0);
             C_0 = M_0*inv(M_0+inv(Q_0));
             L_0 = eye(size(C_0,1)) - C_0;
@@ -360,23 +327,22 @@ classdef agent < objectDefinition & agent_tools
             % Consensus Steps
             Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
             y_00 = y_01 + H_0'*inv(R_0)*z_0;
-            
             x_00 = inv(Y_00)*y_00;
-%             
-%             observedObject.Y = Y_00;
-%             observedObject.y = y_00;
+            
+            % Store the state variables for the next time step
             this.memory_Y = Y_00;
             this.memory_y = y_00;
             this.memory_id_list = id_list;
             
+            % Update the position of each object with the filtered position
             estimatedObjects = observedObjects;
             for i = numel(estimatedObjects)
                 id = estimatedObjects(i).objectID;
                 my_pos = [this.state_from_id(x_00, id_list, this.objectID); 0];
                 pos = estimatedObjects(i).position;
                 est_pos = [this.state_from_id(x_00, id_list, id); 0];
-                true_range = norm(pos)
-                est_range = norm(my_pos - est_pos)
+                true_range = norm(pos);
+                est_range = norm(my_pos - est_pos);
                 estimatedObjects(i).position = est_pos;
             end
         end

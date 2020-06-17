@@ -144,6 +144,10 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
+    % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
+    
+    % /////////////////////////////////////////////////////////////////////
+    
     % 7. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
     step = step + 1;
 end
@@ -607,6 +611,31 @@ switch SIMfirstObject.type
         % CONSIDERED PASSIVE - NO FEEDBACK REQUIRED %%%%%%%%%%%%%%%%%%%%%%%
         % DO NOT UPDATE
 end
+end
+
+% /////////////////////// CONSENSUS OPERATIONS ////////////////////////////
+
+function [agent_data] = get_agent_state_variables(SIM)
+    % Grab and return the state variables from each agent
+end
+
+function [sorted_data] = sort_agent_state_variables(agent_data)
+    % Use id lists to create a common set of IDs and re-order all agents' data to match
+end
+
+function [agent_groups] = break_agents_into_groups(SIM, agent_data)
+    % Use range/other methos to determine which agents can communicate with eachother
+end
+
+function [sorted_data] = consensus_step(agent_data)
+    % Perform consensus computations
+end
+
+function [] = consensus(agent_data)
+    consensus_data(1) = agent_data;
+    for i = 2:60
+        consensus_data(i) = consensus_step(consensus_data(i-1));
+    end
 end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////
