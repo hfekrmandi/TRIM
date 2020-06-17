@@ -35,12 +35,12 @@ sim_publishFigures = false;
 sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 2;
-sim_agentRadius     = 0.2;
-sim_agentOrbit      = 10;
-sim_agentVelocity   = 5;
+sim_agentNumber     = 1;
+sim_agentRadius     = 0.5;
+sim_agentOrbit      = 5;
+sim_agentVelocity   = 2;
 sim_adjacencyMatrix = double(~eye(sim_agentNumber));
-sim_waypointOrbit   = 2;
+sim_waypointOrbit   = 15;
 sim_waypointRadius  = 0.2;
 sim_offsetAngle     = pi/4;
 sim_obstacleNumber  = 0;

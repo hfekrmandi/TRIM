@@ -172,29 +172,30 @@ for index = 1:obstacleNumber
 end
 
 %% DEFINE WAYPOINTS AND ASSIGN GLOBAL PARAMETERS
-% DEFINE THE FIRST WAYPOINT SETF
+% DEFINE THE FIRST WAYPOINT SET
 waypointConfig = SBinstance.planarRing(...
-    'objects',agentNumber,...
+    'objects',7,...
     'radius',inputConfig.waypointOrbit,...
     'velocities',0,...
     'zeroAngle',0);
 
 % MOVE THROUGH THE WAYPOINTS AND INITIALISE WITH GLOBAL PROPERTIES
 fprintf('[SCENARIO]\tAssigning waypoint definitions:\n'); 
-for index = 1:agentNumber
+waypointIndex = cell(7,1);
+for index = 1:7
     % Create a way-point
-    waypointIndex{index} = waypoint('radius',inputConfig.waypointRadius,'name',sprintf('WP-%s',agentIndex{index}.name));
+    waypointIndex{index} = waypoint('radius',inputConfig.waypointRadius,'name',sprintf('WP-001'));
     % Update the GLOBAL properties
     waypointIndex{index}.SetGLOBAL('position',waypointConfig.positions(:,index) + inputConfig.noiseFactor*[randn(2,1);0]);
     waypointIndex{index}.SetGLOBAL('velocity',waypointConfig.velocities(:,index));
     waypointIndex{index}.SetGLOBAL('quaternion',waypointConfig.quaternions(:,index));
     % Create the way-point association
-    waypointIndex{index}.CreateAgentAssociation(agentIndex{index},5);  % Create waypoint with association to agent
+    waypointIndex{index}.CreateAgentAssociation(agentIndex{1},5);  % Create waypoint with association to agent
 end
 
 %% /////////////// CLEAN UP ///////////////////////////////////////////////
 % BUILD THE COMPLETE OBJECT SET
-objectIndex = vertcat(agentIndex,obstacleIndex,waypointIndex'); 
+objectIndex = vertcat(agentIndex,obstacleIndex,waypointIndex); 
 % PLOT THE SCENE
 if inputConfig.plot
     SBinstance.plotObjectIndex(objectIndex);                            % Plot the object index
