@@ -36,6 +36,8 @@ classdef agent < objectDefinition & agent_tools
         Q;
         memory_Y = [];
         memory_y = [];
+        memory_I = [];
+        memory_i = [];
         memory_id_list = [];
     end
     
@@ -165,9 +167,9 @@ classdef agent < objectDefinition & agent_tools
             assert(isnumeric(ENV.dt),'The time-step must be a numeric timestep.');
             assert(isstruct(observedobjects),'Second parameter is a vector of observation structures.');
             
-            estimatedobjects = this.ObsvModel(ENV.dt,observedobjects);
-            for entry = 1:numel(estimatedobjects)
-                this = this.UpdateMemoryFromObject(ENV.currentTime, estimatedobjects(entry));
+            this.InformationFilter(ENV.dt,observedobjects);
+            for entry = 1:numel(observedobjects)
+                this = this.UpdateMemoryFromObject(ENV.currentTime, observedobjects(entry));
             end
             
 %             % Update agent memory structure
@@ -200,7 +202,7 @@ classdef agent < objectDefinition & agent_tools
      %% //////////////////////// OBSERVATION FUNCTIONS /////////////////////////
     methods
         % Observation MODEL - TOP LEVEL (Default)
-        function [estimatedObjects] = ObsvModel(this,dt,observedObjects)
+        function InformationFilter(this,dt,observedObjects)
             % This function provides an overridable method resembling the
             % sensor model through which all objects are processed.
             
@@ -302,6 +304,7 @@ classdef agent < objectDefinition & agent_tools
                 id = observed_ids(i);
                 j = find(id_list==id);
                 j_this = find(id_list==this.objectID);
+                
                 H_0(j,:) = this.Hz_range_2d(x_11, j_this, j);
                 z_0(j) = observedObjects(i).range;
             end
@@ -310,7 +313,6 @@ classdef agent < objectDefinition & agent_tools
             
             % For each agent, update F
             for i = 1:numel(id_list)
-                id = id_list(i);
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
 
@@ -324,27 +326,29 @@ classdef agent < objectDefinition & agent_tools
             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
             y_01 = L_0*inv(F_0)'*y_11;
             
-            % Consensus Steps
-            Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
-            y_00 = y_01 + H_0'*inv(R_0)*z_0;
-            x_00 = inv(Y_00)*y_00;
+%             % Consensus Steps
+%             Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
+%             y_00 = y_01 + H_0'*inv(R_0)*z_0;
+%             x_00 = inv(Y_00)*y_00;
             
-            % Store the state variables for the next time step
-            this.memory_Y = Y_00;
-            this.memory_y = y_00;
+            % Store the consensus variables
+            this.memory_Y = Y_01;
+            this.memory_y = y_01;
+            this.memory_I = H_0'*inv(R_0)*H_0;
+            this.memory_i = H_0'*inv(R_0)*z_0;
             this.memory_id_list = id_list;
             
-            % Update the position of each object with the filtered position
-            estimatedObjects = observedObjects;
-            for i = numel(estimatedObjects)
-                id = estimatedObjects(i).objectID;
-                my_pos = [this.state_from_id(x_00, id_list, this.objectID); 0];
-                pos = estimatedObjects(i).position;
-                est_pos = [this.state_from_id(x_00, id_list, id); 0];
-                true_range = norm(pos);
-                est_range = norm(my_pos - est_pos);
-                estimatedObjects(i).position = est_pos;
-            end
+%             % Update the position of each object with the filtered position
+%             estimatedObjects = observedObjects;
+%             for i = numel(estimatedObjects)
+%                 id = estimatedObjects(i).objectID;
+%                 my_pos = [this.state_from_id(x_00, id_list, this.objectID); 0];
+%                 pos = estimatedObjects(i).position;
+%                 est_pos = [this.state_from_id(x_00, id_list, id); 0];
+%                 true_range = norm(pos);
+%                 est_range = norm(my_pos - est_pos);
+%                 estimatedObjects(i).position = est_pos;
+%             end
         end
         
         function [ret] = state_from_id(this, x, id_list, id)

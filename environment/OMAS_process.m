@@ -145,7 +145,7 @@ while step <= META.TIME.numSteps
     % /////////////////////////////////////////////////////////////////////
     
     % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
-    
+    get_sorted_agent_states(META,objectIndex)
     % /////////////////////////////////////////////////////////////////////
     
     % 7. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
@@ -615,16 +615,59 @@ end
 
 % /////////////////////// CONSENSUS OPERATIONS ////////////////////////////
 
-function [agent_data] = get_agent_state_variables(SIM)
-    % Grab and return the state variables from each agent
-end
-
-function [sorted_data] = sort_agent_state_variables(agent_data)
+function [agents] = get_sorted_agent_states(SIM,objectIndex)
+    id_list = [];
+    for agent_index = 1:numel(SIM.OBJECTS)
+        if SIM.OBJECTS(agent_index).type == OMAS_objectType.agent
+            for i = 1:numel(SIM.OBJECTS)
+                if objectIndex{agent_index}.objectID == SIM.OBJECTS(agent_index).objectID
+                    agents{objectIndex{agent_index}.objectID} = objectIndex{agent_index};
+                    id_list = [id_list, objectIndex{agent_index}.memory_id_list];
+                end
+            end
+        end
+    end
+    
+    id_list = sort(unique(id_list));
+    dim_state = agents{1}.dim_state;
+    dim_obs = agents{1}.dim_obs;
+    n_agents = numel(id_list);
+    
+    for agent_index = 1:numel(agents)
+        agent = agents{agent_index};
+        if ~isequal(agent.memory_id_list, id_list)
+            Y = zeros(n_agents*dim_state);
+            y = zeros(n_agents*dim_state, 1);
+            I = zeros(size(agent.memory_I));
+            i = zeros(size(agent.memory_i));
+            
+            for id_index = 1:n_agents
+                id = id_list(id_index);
+                agent_id_index = find([agent.memory_id_list] == id);
+                if ~isempty(agent_id_index)
+                    g_low = dim_state*(id_index - 1) + 1;
+                    g_high = dim_state*id_index;
+                    a_low = dim_state*(agent_id_index - 1) + 1;
+                    a_high = dim_state*agent_id_index;
+                    Y(g_low:g_high,g_low:g_high) = agent.memory_Y(a_low:a_high,a_low:a_high);
+                    y(g_low:g_high) = agent.memory_y(a_low:a_high);
+                    I(id_index) = agent.memory_I(agent_id_index);
+                    i(id_index) = agent.memory_i(agent_id_index);
+                end
+            end
+            agent.memory_id_list = id_list;
+            agent.memory_Y = Y;
+            agent.memory_y = y;
+            agent.memory_I = I;
+            agent.memory_i = i;
+        end
+    end
+    % Grab the state variables from each agent
     % Use id lists to create a common set of IDs and re-order all agents' data to match
 end
 
 function [agent_groups] = break_agents_into_groups(SIM, agent_data)
-    % Use range/other methos to determine which agents can communicate with eachother
+    % Use range/other methods to determine which agents can communicate with eachother
 end
 
 function [sorted_data] = consensus_step(agent_data)
