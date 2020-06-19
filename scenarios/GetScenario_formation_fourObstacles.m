@@ -191,6 +191,7 @@ for index = 1:7
     waypointIndex{index}.SetGLOBAL('quaternion',waypointConfig.quaternions(:,index));
     % Create the way-point association
     waypointIndex{index}.CreateAgentAssociation(agentIndex{1},5);  % Create waypoint with association to agent
+   % waypointIndex{index}.CreateAgentAssociation(agentIndex{2},5);  % Create waypoint with association to agent
 end
 
 %% /////////////// CLEAN UP ///////////////////////////////////////////////
