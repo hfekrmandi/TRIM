@@ -145,7 +145,11 @@ while step <= META.TIME.numSteps
     % /////////////////////////////////////////////////////////////////////
     
     % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
-    get_sorted_agent_states(META,objectIndex)
+    agent_data = get_sorted_agent_states(META, objectIndex);
+%     agent_data{1}.memory_id_obs = [2];
+%     agent_data{2}.memory_id_obs = [1];
+%     agent_data{3}.memory_id_obs = [4];
+    agent_groups = break_agents_into_groups(META, agent_data);
     % /////////////////////////////////////////////////////////////////////
     
     % 7. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
@@ -667,7 +671,58 @@ function [agents] = get_sorted_agent_states(SIM,objectIndex)
 end
 
 function [agent_groups] = break_agents_into_groups(SIM, agent_data)
-    % Use range/other methods to determine which agents can communicate with eachother
+    % Split into groups of agents that observed eachother
+    % Assumes that if an agent can observe another it can communicate with
+    % it, and puts those agents in a group. Continues this along the chain
+    % until there are no more agents in this group, then finds the other
+    % isolated groups. 
+    
+    agent_groups = [];
+    num_groups = 0;
+    % While there are still agents to group up
+    while numel(agent_data) > 0
+        
+        % Start with the first remaining agent
+        group = agent_data{1};
+        id_obs = group(1).memory_id_obs;
+        new_group = 1;
+        agent_data(1) = [];
+        
+        % while there are new agents in the group
+        while new_group > 0
+            
+            % Get a list of the newly-observed IDs
+            len = numel(group);
+            tmp = group(1,len-new_group+1:len);
+            id_obs_new = [];
+            for m = 1:numel(tmp)
+                id_obs_new = [id_obs_new, tmp(m).memory_id_obs];
+            end
+            id_obs_new = sort(unique(id_obs_new));
+            id_obs_new = setdiff(id_obs_new, id_obs);
+            id_obs = sort([id_obs, id_obs_new]);
+            new_group = 0;
+            indices = [];
+            
+            % Get the agents with ids matching the observed list
+            for i = id_obs
+                for j = 1:numel(agent_data)
+                    if agent_data{j}.objectID == i
+                        group = [group, agent_data{j}];
+                        new_group = new_group + 1;
+                        indices = [indices, j];
+                    end
+                end
+            end
+            
+            % Remove grouped agents from the general pool
+            for i = sort(indices, 'descend')
+                agent_data(i) = [];
+            end
+        end
+        agent_groups{num_groups+1} = group;
+        num_groups = num_groups + 1;
+    end
 end
 
 function [sorted_data] = consensus_step(agent_data)

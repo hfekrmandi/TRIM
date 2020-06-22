@@ -39,6 +39,7 @@ classdef agent < objectDefinition & agent_tools
         memory_I = [];
         memory_i = [];
         memory_id_list = [];
+        memory_id_obs = [];
     end
     
     %% ///////////////////////// MAIN METHODS /////////////////////////////
@@ -337,6 +338,7 @@ classdef agent < objectDefinition & agent_tools
             this.memory_I = H_0'*inv(R_0)*H_0;
             this.memory_i = H_0'*inv(R_0)*z_0;
             this.memory_id_list = id_list;
+            this.memory_id_obs = observed_ids;
             
 %             % Update the position of each object with the filtered position
 %             estimatedObjects = observedObjects;
