@@ -146,13 +146,12 @@ while step <= META.TIME.numSteps
     
     % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
     agent_data = get_sorted_agent_states(META, objectIndex);
-%     agent_data{1}.memory_id_obs = [2];
-%     agent_data{2}.memory_id_obs = [1];
-%     agent_data{3}.memory_id_obs = [4];
+    agent_data = apply_comm_model(agent_data);
     agent_groups = break_agents_into_groups(META, agent_data);
+    consensus(agent_groups);
     % /////////////////////////////////////////////////////////////////////
     
-    % 7. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
+    % 8. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
     step = step + 1;
 end
 % CREATE TERMINAL VALUES, FOR CLARITY
@@ -511,7 +510,7 @@ switch SIMfirstObject.type
             relativeVelocity = SIMsecondObject.globalState(4:6) - SIMfirstObject.globalState(4:6);
             % ROTATE THE GLOBAL STATE OF THE OBJECT INTO THE AGENT FRAME
             observedPosition = SIMfirstObject.R*relativePosition;            % Rotate the from the global into the body frame of the simReference
-            observedVelocity = SIMfirstObject.R*relativeVelocity;                   
+            observedVelocity = SIMfirstObject.R*relativeVelocity;
             % SPHERICAL REPRESENTATION
             observedRange     = norm(observedPosition);
             if SIMsecondObject.type == 1
@@ -581,10 +580,10 @@ switch SIMfirstObject.type
                                      'radius',observedRadius,...                        % The objects true size
                                      'position',observedPosition(dimensionIndices,1),...% The apparent position in the relative frame
                                      'velocity',observedVelocity(dimensionIndices,1),...% The apparent velocity in the relative frame
-                                     'range',observedz,...                          % The apparent range
+                                     'range',observedz,...                              % The apparent range
                                      'F',observedF,...                                  % The motion model jacobian
                                      'Q',observedQ,...                                  % The motion model covariance
-                                     'id_list',[],...                                  % The motion model covariance
+                                     'id_list',[],...                                   % The motion model covariance
                                      'elevation',observedElevation,...                  % The apparent inclination angle
                                      'heading',observedHeading,...                      % The apparent Azimuth angle
                                      'width',observedAngularWidth,...                   % The apparent angular width at that range    
@@ -618,6 +617,16 @@ end
 end
 
 % /////////////////////// CONSENSUS OPERATIONS ////////////////////////////
+
+function [agent] = agent_with_id(agents, ID)
+    for i = 1:numel(agents)
+        if agents(i).objectID == ID
+            agent = agents(i);
+            return;
+        end
+    end
+    agent = [];
+end
 
 function [agents] = get_sorted_agent_states(SIM,objectIndex)
     id_list = [];
@@ -670,12 +679,30 @@ function [agents] = get_sorted_agent_states(SIM,objectIndex)
     % Use id lists to create a common set of IDs and re-order all agents' data to match
 end
 
+function [agents] = apply_comm_model(agents)
+    % Apply communication model and create list of agents each agent can communicate with
+    agents_arr = [];
+    for agent = agents
+        agents_arr = [agents_arr, agent{1}];
+    end
+    for agent = agents_arr
+        agent.memory_id_comm = [];
+        for i = 1:numel(agent.memory_id_obs)
+            if ~isempty(agent_with_id(agents_arr, agent.memory_id_obs(i)))
+                agent.memory_id_comm = [agent.memory_id_comm, agent.memory_id_obs(i)];
+            end
+        end
+    end
+end
+
 function [agent_groups] = break_agents_into_groups(SIM, agent_data)
     % Split into groups of agents that observed eachother
     % Assumes that if an agent can observe another it can communicate with
     % it, and puts those agents in a group. Continues this along the chain
     % until there are no more agents in this group, then finds the other
     % isolated groups. 
+    
+    % Compute the degree of each node
     
     agent_groups = [];
     num_groups = 0;
@@ -684,7 +711,7 @@ function [agent_groups] = break_agents_into_groups(SIM, agent_data)
         
         % Start with the first remaining agent
         group = agent_data{1};
-        id_obs = group(1).memory_id_obs;
+        id_obs = group(1).memory_id_comm;
         new_group = 1;
         agent_data(1) = [];
         
@@ -696,7 +723,7 @@ function [agent_groups] = break_agents_into_groups(SIM, agent_data)
             tmp = group(1,len-new_group+1:len);
             id_obs_new = [];
             for m = 1:numel(tmp)
-                id_obs_new = [id_obs_new, tmp(m).memory_id_obs];
+                id_obs_new = [id_obs_new, tmp(m).memory_id_comm];
             end
             id_obs_new = sort(unique(id_obs_new));
             id_obs_new = setdiff(id_obs_new, id_obs);
@@ -725,15 +752,108 @@ function [agent_groups] = break_agents_into_groups(SIM, agent_data)
     end
 end
 
-function [sorted_data] = consensus_step(agent_data)
-    % Perform consensus computations
+function [graph, id_to_index] = create_graph(agents)
+    adj = eye(numel(agents));
+    
+    id_to_index = [];
+    for i = 1:numel(agents)
+        id_to_index(i) = agents(i).objectID;
+    end
+    
+    for i = 1:numel(agents)
+        for j = agents(i).memory_id_comm
+            adj(i,id_to_index(j)) = 1;
+        end
+    end
+    
+    graph = generate_graph(adj);
+    
 end
 
-function [] = consensus(agent_data)
-    consensus_data(1) = agent_data;
-    for i = 2:60
-        consensus_data(i) = consensus_step(consensus_data(i-1));
+function [concensus_data] = consensus_group(agents)
+    % Perform consensus computations
+    
+    %% Initialize Graph
+    % Generate graph
+        % Create adjacency matrix
+        % use generate_graph function
+    [graph, id_to_index] = create_graph(agents);
+    size_comp = networkComponents(graph.p);
+    
+    concensus_data = [];
+    % Remaining questions
+        % The graph is not directed, correct?
+        % Do we update the agents' values after each consus step?
+        % What is the union/groupset if statement for?
+        % Errors with calc_ci_weights_ver3
+        % It is easy to implement a seperate observation and communication connection check
+        
+    
+    %% Compute first values
+    % Y_k+1 = Y + I;
+    % y_k+1 = y + i;
+    % det ratio?
+    
+    for i = 1:numel(agents)
+        Y_local=[];y_local = [];
+        idx_neighbors = agents(i).memory_id_comm;
+        
+        agent_1 = agent_with_id(agents, agents(i).memory_id_comm(1));
+        for j = 1:numel(idx_neighbors)
+            agent = agent_with_id(agents, idx_neighbors(j));
+            Y_local(:,:,j) = (agent.memory_Y);
+            y_local(:,:,j) = (agent.memory_y);
+        end
+        
+        weights_ci = [];Y_prior = [];y_prior = [];
+        [weights_ci,Y_prior,y_prior] = calc_ci_weights_ver3(Y_local,y_local,'det');
+        
+        delta_I = zeros(size(agents(1).memory_I));
+        delta_i = zeros(size(agents(1).memory_i));
+        
+        for j = 1:numel(agents)
+            p_jk = graph.p(i,j);
+            
+            delta_I = delta_I + p_jk*agents(j).memory_I;
+            delta_i = delta_i + p_jk*agents(j).memory_i;
+            
+%             if p_jk
+%                 opt_dist.result.consenus{j_agent}.group_set{i_consensus} = union( opt_dist.result.consenus{j_agent}.group_set{i_consensus},...
+%                 opt_dist.result.consenus{k_agent}.group_set{i_consensus-1});
+%             end
+        end
+        
+        ratio = i / num_steps;
+        Y = Y_prior + ratio*size_comp(i)*delta_I;
+        y = y_prior + ratio*size_comp(i)*delta_i;
     end
+    
+    consensus_data = [];
+    
+    % Compute CI weights
+    % Compute graph weights
+    
+    % for k = 2:n_steps
+    %   Find neighbors and grab their variables
+    %   Compute CI weights
+    %     weights_ci = [];inf_mat = [];inf_vect=[];
+    %     [weights_ci,inf_mat,inf_vect] =calc_ci_weights_ver3(I_local,i_local,'det');
+    %   Use CI weights for Y and y
+    %   Sum: graph_weight * I, graph_weight * i for each agent
+    
+    %   Are graph weights MHMC weights?
+    %   Y_k+1 = Y + I; ?
+    %   y_k+1 = y + i; ?
+end
+
+function [] = consensus(agent_groups)
+    for group_num = 1:numel(agent_groups)
+        consensus_group(agent_groups{group_num});
+    end
+%     consensus_data(1) = agent_groups;
+%     for i = 2:60
+%         consensus_data(i) = consensus_step(consensus_data(i-1));
+%     end
 end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////

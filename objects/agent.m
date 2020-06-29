@@ -40,6 +40,7 @@ classdef agent < objectDefinition & agent_tools
         memory_i = [];
         memory_id_list = [];
         memory_id_obs = [];
+        memory_id_comm = [];
     end
     
     %% ///////////////////////// MAIN METHODS /////////////////////////////
