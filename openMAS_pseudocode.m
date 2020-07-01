@@ -28,7 +28,7 @@ OMAS_initialize
 								% check for collisions
 							}
 						}
-						fdfdfdf
+						
 						% Check if each agent can see each other agent
 							% Some form of geometry with centroid, normals, faces, and vertices
 							% set detectionLogicals variable
@@ -85,3 +85,8 @@ Methods:
 	{
 		Takes in all detected objects and generates new control signal
 	}
+
+Things to update for state estimation/filtering
+
+ - Update observation model in OMAS_process - UpdateObjects
+ - Update filter and H/F functions in agent.m

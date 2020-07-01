@@ -36,7 +36,6 @@ end
 
 weights_ci = x;
 if sum(weights_ci)>1
-    log_message('sum of w more than 1 --> renormalizing');
     weights_ci = weights_ci./sum(weights_ci);
 end
 
