@@ -618,6 +618,8 @@ end
 
 % /////////////////////// CONSENSUS OPERATIONS ////////////////////////////
 
+% Grab the agent with a specific ID
+% Done by looping through the list of agents and checking the ID
 function [agent] = agent_with_id(agents, ID)
     for i = 1:numel(agents)
         if agents(i).objectID == ID
@@ -628,6 +630,7 @@ function [agent] = agent_with_id(agents, ID)
     agent = [];
 end
 
+% Ensures that every agent has the same state variables in the same order
 function [agents] = get_sorted_agent_states(SIM,objectIndex)
 
     % Build combined list of ids
@@ -643,26 +646,31 @@ function [agents] = get_sorted_agent_states(SIM,objectIndex)
         end
     end
     
+    % Ensure that the list is sorted, so it is the same on sequential runs
     id_list = sort(unique(id_list));
     dim_state = agents{1}.dim_state;
     dim_obs = agents{1}.dim_obs;
     n_agents = numel(id_list);
     
+    % Ensure all agents' state variables match the master list
     for agent_index = 1:numel(agents)
         agent = agents{agent_index};
+        
+        % If the state variables don't match, add them in
         if ~isequal(agent.memory_id_list, id_list)
             Y = 0.01*eye(n_agents*dim_state);
             y = zeros(n_agents*dim_state, 1);
             I = zeros(n_agents*dim_state);
             i = zeros(n_agents*dim_state, 1);
             
-            % Take the agent's values and store them in the proper location in the group's arrays
+            % Move the agents' values to the location specified in the master list
             for agent_index_1 = 1:numel(agent.memory_id_list)
                 for agent_index_2 = 1:numel(agent.memory_id_list)
                     
                     group_index_1 = find(id_list == agent.memory_id_list(agent_index_1));
                     group_index_2 = find(id_list == agent.memory_id_list(agent_index_2));
                     
+                    % Generate indices (to make the assignment setp shorter)
                     g_row_lo = dim_state*(group_index_1 - 1) + 1;
                     g_row_hi = dim_state*group_index_1;
                     g_col_lo = dim_state*(group_index_2 - 1) + 1;
@@ -687,12 +695,14 @@ function [agents] = get_sorted_agent_states(SIM,objectIndex)
             agent.memory_i = i;
         end
     end
-    % Grab the state variables from each agent
-    % Use id lists to create a common set of IDs and re-order all agents' data to match
 end
 
+% Update the momory_id_comm list in each agent to include each agent they
+% can communicate with (based on a communication model).
 function [agents] = apply_comm_model(agents)
+
     % Apply communication model and create list of agents each agent can communicate with
+    % Current communication model is the same as the observation model
     agents_arr = [];
     for agent = agents
         agents_arr = [agents_arr, agent{1}];
@@ -707,14 +717,12 @@ function [agents] = apply_comm_model(agents)
     end
 end
 
+% Break agents up into groups based on communication graph
 function [agent_groups] = break_agents_into_groups(SIM, agent_data)
-    % Split into groups of agents that observed eachother
-    % Assumes that if an agent can observe another it can communicate with
-    % it, and puts those agents in a group. Continues this along the chain
+    % Split into groups of agents that can communicate with eachother, 
+    % and puts those agents in a group. Continues this along the chain
     % until there are no more agents in this group, then finds the other
     % isolated groups. 
-    
-    % Compute the degree of each node
     
     agent_groups = [];
     num_groups = 0;
@@ -764,6 +772,7 @@ function [agent_groups] = break_agents_into_groups(SIM, agent_data)
     end
 end
 
+% Create a graph from a group of agents
 function [graph, id_to_index] = create_graph(agents)
     adj = eye(numel(agents));
     
@@ -782,7 +791,8 @@ function [graph, id_to_index] = create_graph(agents)
     
 end
 
-function [concensus_data] = consensus_group(agents, step, num_steps)
+% Perform one consensus step
+function [consensus_data] = consensus_group(agents, step, num_steps)
     % Perform consensus computations
     
     %% Initialize Graph
@@ -791,11 +801,6 @@ function [concensus_data] = consensus_group(agents, step, num_steps)
         % use generate_graph function
     [graph, id_to_index] = create_graph(agents);
     size_comp = networkComponents(graph.p);
-    
-    %% Compute first values
-    % Y_k+1 = Y + I;
-    % y_k+1 = y + i;
-    % det ratio?
     
     %% Compute and store consensus variables
     for i = 1:numel(agents)
@@ -827,36 +832,45 @@ function [concensus_data] = consensus_group(agents, step, num_steps)
         ratio = step / num_steps;
         Y = Y_prior + ratio*size_comp(i)*delta_I;
         y = y_prior + ratio*size_comp(i)*delta_i;
-        concensus_data{i}.Y = Y;
-        concensus_data{i}.y = y;
+        consensus_data{i}.Y = Y;
+        consensus_data{i}.y = y;
+        consensus_data{i}.Y_prior = Y_prior;
+        consensus_data{i}.y_prior = y_prior;
+        consensus_data{i}.delta_I = delta_I;
+        consensus_data{i}.delta_i = delta_i;
     end
-    
-    % Compute CI weights
-    % Compute graph weights
-    
-    % for k = 2:n_steps
-    %   Find neighbors and grab their variables
-    %   Compute CI weights
-    %     weights_ci = [];inf_mat = [];inf_vect=[];
-    %     [weights_ci,inf_mat,inf_vect] =calc_ci_weights_ver3(I_local,i_local,'det');
-    %   Use CI weights for Y and y
-    %   Sum: graph_weight * I, graph_weight * i for each agent
-    
-    %   Are graph weights MHMC weights?
-    %   Y_k+1 = Y + I; ?
-    %   y_k+1 = y + i; ?
 end
 
 function [] = consensus(agent_groups)
-    num_steps = 10;
+    num_steps = 20;
     for group_num = 1:numel(agent_groups)
-        % Compute first concensus step
+        
+        % Compute first consensus step
+        step = 1;
+        for i = 1:numel(agent_groups{group_num})
+            consensus_data{step, group_num}{i}.Y_prior = agent_groups{group_num}(i).memory_Y;
+            consensus_data{step, group_num}{i}.y_prior = agent_groups{group_num}(i).memory_y;
+            consensus_data{step, group_num}{i}.delta_I = agent_groups{group_num}(i).memory_I;
+            consensus_data{step, group_num}{i}.delta_i = agent_groups{group_num}(i).memory_i;
+        end
+        
+        % Compute the remaining consensus steps
         for step = 2:num_steps
             consensus_data{step, group_num} = consensus_group(agent_groups{group_num}, step, num_steps);
+            
+            % After all agents' variables have been computed, store them
             for i = 1:numel(consensus_data{step, group_num})
-                agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
-                agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
+                agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y_prior;
+                agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y_prior;
+                agent_groups{group_num}(i).memory_I = consensus_data{step, group_num}{i}.delta_I;
+                agent_groups{group_num}(i).memory_i = consensus_data{step, group_num}{i}.delta_i;
             end
+        end
+        
+        % Store final consensus in each agent
+        for i = 1:numel(consensus_data{step, group_num})
+            agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
+            agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
         end
     end
 end
