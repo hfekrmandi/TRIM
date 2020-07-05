@@ -144,7 +144,14 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 7. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
+    % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
+    agent_data = get_sorted_agent_states(META, objectIndex);
+    agent_data = apply_comm_model(agent_data);
+    agent_groups = break_agents_into_groups(META, agent_data);
+    consensus(agent_groups);
+    % /////////////////////////////////////////////////////////////////////
+    
+    % 8. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
     step = step + 1;
 end
 % CREATE TERMINAL VALUES, FOR CLARITY
@@ -503,24 +510,18 @@ switch SIMfirstObject.type
             relativeVelocity = SIMsecondObject.globalState(4:6) - SIMfirstObject.globalState(4:6);
             % ROTATE THE GLOBAL STATE OF THE OBJECT INTO THE AGENT FRAME
             observedPosition = SIMfirstObject.R*relativePosition;            % Rotate the from the global into the body frame of the simReference
-            observedVelocity = SIMfirstObject.R*relativeVelocity;                   
+            observedVelocity = SIMfirstObject.R*relativeVelocity;
             % SPHERICAL REPRESENTATION
             observedRange     = norm(observedPosition);
             if SIMsecondObject.type == 1
-                % Jacobian for purely range observation model
-                observedP         = eye(3);
-                observedx         = zeros(3,1);
-                observedy         = zeros(3,1);
-                observedH         = (observedPosition/observedRange)';
-                observedF         = eye(3);
+                % Observed object is an agent, grab the motion model and Q
+                observedz         = norm(observedPosition);
+                observedF         = eye(2);
                 observedQ         = secondObject.Q;
             else
-                % Jacobian for purely range observation model
-                observedP         = eye(3);
-                observedx         = zeros(3,1);
-                observedy         = zeros(3,1);
-                observedH         = (observedPosition/observedRange)';
-                observedF         = eye(3);
+                % Observed object is an immobile object, motion model and Q = 0
+                observedz         = norm(observedPosition);
+                observedF         = zeros(2);
                 observedQ         = 0;
             end
             observedElevation = asin(observedPosition(3)/observedRange);
@@ -579,13 +580,10 @@ switch SIMfirstObject.type
                                      'radius',observedRadius,...                        % The objects true size
                                      'position',observedPosition(dimensionIndices,1),...% The apparent position in the relative frame
                                      'velocity',observedVelocity(dimensionIndices,1),...% The apparent velocity in the relative frame
-                                     'range',observedRange,...                          % The apparent range
-                                     'P',observedP,...                                  % The measurement covariance matrix
-                                     'x',observedx,...                                  % The position measurement
-                                     'y',observedy,...                                  % The information vector
-                                     'H',observedH,...                                  % The measurement model jacobian
+                                     'range',observedz,...                              % The apparent range
                                      'F',observedF,...                                  % The motion model jacobian
                                      'Q',observedQ,...                                  % The motion model covariance
+                                     'id_list',[],...                                   % The motion model covariance
                                      'elevation',observedElevation,...                  % The apparent inclination angle
                                      'heading',observedHeading,...                      % The apparent Azimuth angle
                                      'width',observedAngularWidth,...                   % The apparent angular width at that range    
@@ -616,6 +614,265 @@ switch SIMfirstObject.type
         % CONSIDERED PASSIVE - NO FEEDBACK REQUIRED %%%%%%%%%%%%%%%%%%%%%%%
         % DO NOT UPDATE
 end
+end
+
+% /////////////////////// CONSENSUS OPERATIONS ////////////////////////////
+
+% Grab the agent with a specific ID
+% Done by looping through the list of agents and checking the ID
+function [agent] = agent_with_id(agents, ID)
+    for i = 1:numel(agents)
+        if agents(i).objectID == ID
+            agent = agents(i);
+            return;
+        end
+    end
+    agent = [];
+end
+
+% Ensures that every agent has the same state variables in the same order
+function [agents] = get_sorted_agent_states(SIM,objectIndex)
+
+    % Build combined list of ids
+    id_list = [];
+    for agent_index = 1:numel(SIM.OBJECTS)
+        if SIM.OBJECTS(agent_index).type == OMAS_objectType.agent
+            for i = 1:numel(SIM.OBJECTS)
+                if objectIndex{agent_index}.objectID == SIM.OBJECTS(agent_index).objectID
+                    agents{objectIndex{agent_index}.objectID} = objectIndex{agent_index};
+                    id_list = [id_list, objectIndex{agent_index}.memory_id_list];
+                end
+            end
+        end
+    end
+    
+    % Ensure that the list is sorted, so it is the same on sequential runs
+    id_list = sort(unique(id_list));
+    dim_state = agents{1}.dim_state;
+    dim_obs = agents{1}.dim_obs;
+    n_agents = numel(id_list);
+    
+    % Ensure all agents' state variables match the master list
+    for agent_index = 1:numel(agents)
+        agent = agents{agent_index};
+        
+        % If the state variables don't match, add them in
+        if ~isequal(agent.memory_id_list, id_list)
+            Y = 0.01*eye(n_agents*dim_state);
+            y = zeros(n_agents*dim_state, 1);
+            I = zeros(n_agents*dim_state);
+            i = zeros(n_agents*dim_state, 1);
+            
+            % Move the agents' values to the location specified in the master list
+            for agent_index_1 = 1:numel(agent.memory_id_list)
+                for agent_index_2 = 1:numel(agent.memory_id_list)
+                    
+                    group_index_1 = find(id_list == agent.memory_id_list(agent_index_1));
+                    group_index_2 = find(id_list == agent.memory_id_list(agent_index_2));
+                    
+                    % Generate indices (to make the assignment setp shorter)
+                    g_row_lo = dim_state*(group_index_1 - 1) + 1;
+                    g_row_hi = dim_state*group_index_1;
+                    g_col_lo = dim_state*(group_index_2 - 1) + 1;
+                    g_col_hi = dim_state*group_index_2;
+                    a_row_lo = dim_state*(agent_index_1 - 1) + 1;
+                    a_row_hi = dim_state*agent_index_1;
+                    a_col_lo = dim_state*(agent_index_2 - 1) + 1;
+                    a_col_hi = dim_state*agent_index_2;
+                    
+                    Y(g_row_lo:g_row_hi,g_col_lo:g_col_hi) = agent.memory_Y(a_row_lo:a_row_hi,a_col_lo:a_col_hi);
+                    I(g_row_lo:g_row_hi,g_col_lo:g_col_hi) = agent.memory_I(a_row_lo:a_row_hi,a_col_lo:a_col_hi);
+                end
+                
+                y(g_row_lo:g_row_hi) = agent.memory_y(a_row_lo:a_row_hi);
+                i(g_row_lo:g_row_hi) = agent.memory_i(a_row_lo:a_row_hi);
+            end
+            
+            agent.memory_id_list = id_list;
+            agent.memory_Y = Y;
+            agent.memory_y = y;
+            agent.memory_I = I;
+            agent.memory_i = i;
+        end
+    end
+end
+
+% Update the momory_id_comm list in each agent to include each agent they
+% can communicate with (based on a communication model).
+function [agents] = apply_comm_model(agents)
+
+    % Apply communication model and create list of agents each agent can communicate with
+    % Current communication model is the same as the observation model
+    agents_arr = [];
+    for agent = agents
+        agents_arr = [agents_arr, agent{1}];
+    end
+    for agent = agents_arr
+        agent.memory_id_comm = [];
+        for i = 1:numel(agent.memory_id_obs)
+            if ~isempty(agent_with_id(agents_arr, agent.memory_id_obs(i)))
+                agent.memory_id_comm = [agent.memory_id_comm, agent.memory_id_obs(i)];
+            end
+        end
+    end
+end
+
+% Break agents up into groups based on communication graph
+function [agent_groups] = break_agents_into_groups(SIM, agent_data)
+    % Split into groups of agents that can communicate with eachother, 
+    % and puts those agents in a group. Continues this along the chain
+    % until there are no more agents in this group, then finds the other
+    % isolated groups. 
+    
+    agent_groups = [];
+    num_groups = 0;
+    % While there are still agents to group up
+    while numel(agent_data) > 0
+        
+        % Start with the first remaining agent
+        group = agent_data{1};
+        id_obs = group(1).memory_id_comm;
+        new_group = 1;
+        agent_data(1) = [];
+        
+        % while there are new agents in the group
+        while new_group > 0
+            
+            % Get a list of the newly-observed IDs
+            len = numel(group);
+            tmp = group(1,len-new_group+1:len);
+            id_obs_new = [];
+            for m = 1:numel(tmp)
+                id_obs_new = [id_obs_new, tmp(m).memory_id_comm];
+            end
+            id_obs_new = sort(unique(id_obs_new));
+            id_obs_new = setdiff(id_obs_new, id_obs);
+            id_obs = sort([id_obs, id_obs_new]);
+            new_group = 0;
+            indices = [];
+            
+            % Get the agents with ids matching the observed list
+            for i = id_obs
+                for j = 1:numel(agent_data)
+                    if agent_data{j}.objectID == i
+                        group = [group, agent_data{j}];
+                        new_group = new_group + 1;
+                        indices = [indices, j];
+                    end
+                end
+            end
+            
+            % Remove grouped agents from the general pool
+            for i = sort(indices, 'descend')
+                agent_data(i) = [];
+            end
+        end
+        agent_groups{num_groups+1} = group;
+        num_groups = num_groups + 1;
+    end
+end
+
+% Create a graph from a group of agents
+function [graph, id_to_index] = create_graph(agents)
+    adj = eye(numel(agents));
+    
+    id_to_index = [];
+    for i = 1:numel(agents)
+        id_to_index(i) = agents(i).objectID;
+    end
+    
+    for i = 1:numel(agents)
+        for j = agents(i).memory_id_comm
+            adj(i,id_to_index(j)) = 1;
+        end
+    end
+    
+    graph = generate_graph(adj);
+    
+end
+
+% Perform one consensus step
+function [consensus_data] = consensus_group(agents, step, num_steps)
+    % Perform consensus computations
+    
+    %% Initialize Graph
+    % Generate graph
+        % Create adjacency matrix
+        % use generate_graph function
+    [graph, id_to_index] = create_graph(agents);
+    size_comp = networkComponents(graph.p);
+    
+    %% Compute and store consensus variables
+    for i = 1:numel(agents)
+        
+        % Grab variables from neighboring agents
+        Y_local = [];
+        y_local = [];
+        idx_neighbors = agents(i).memory_id_comm;
+        
+        for j = 1:numel(idx_neighbors)
+            agent = agent_with_id(agents, idx_neighbors(j));
+            Y_local(:,:,j) = (agent.memory_Y);
+            y_local(:,:,j) = (agent.memory_y);
+        end
+        
+        % Compute and apply CI weights
+        [weights_ci,Y_prior,y_prior] = calc_ci_weights_ver3(Y_local,y_local,'det');
+        
+        delta_I = zeros(size(agents(1).memory_I));
+        delta_i = zeros(size(agents(1).memory_i));
+        
+        for j = 1:numel(agents)
+            p_jk = graph.p(i,j);
+            
+            delta_I = delta_I + p_jk*agents(j).memory_I;
+            delta_i = delta_i + p_jk*agents(j).memory_i;
+        end
+        
+        ratio = step / num_steps;
+        Y = Y_prior + ratio*size_comp(i)*delta_I;
+        y = y_prior + ratio*size_comp(i)*delta_i;
+        consensus_data{i}.Y = Y;
+        consensus_data{i}.y = y;
+        consensus_data{i}.Y_prior = Y_prior;
+        consensus_data{i}.y_prior = y_prior;
+        consensus_data{i}.delta_I = delta_I;
+        consensus_data{i}.delta_i = delta_i;
+    end
+end
+
+function [] = consensus(agent_groups)
+    num_steps = 20;
+    for group_num = 1:numel(agent_groups)
+        
+        % Compute first consensus step
+        step = 1;
+        for i = 1:numel(agent_groups{group_num})
+            consensus_data{step, group_num}{i}.Y_prior = agent_groups{group_num}(i).memory_Y;
+            consensus_data{step, group_num}{i}.y_prior = agent_groups{group_num}(i).memory_y;
+            consensus_data{step, group_num}{i}.delta_I = agent_groups{group_num}(i).memory_I;
+            consensus_data{step, group_num}{i}.delta_i = agent_groups{group_num}(i).memory_i;
+        end
+        
+        % Compute the remaining consensus steps
+        for step = 2:num_steps
+            consensus_data{step, group_num} = consensus_group(agent_groups{group_num}, step, num_steps);
+            
+            % After all agents' variables have been computed, store them
+            for i = 1:numel(consensus_data{step, group_num})
+                agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y_prior;
+                agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y_prior;
+                agent_groups{group_num}(i).memory_I = consensus_data{step, group_num}{i}.delta_I;
+                agent_groups{group_num}(i).memory_i = consensus_data{step, group_num}{i}.delta_i;
+            end
+        end
+        
+        % Store final consensus in each agent
+        for i = 1:numel(consensus_data{step, group_num})
+            agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
+            agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
+        end
+    end
 end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////
