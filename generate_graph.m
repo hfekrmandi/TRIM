@@ -39,7 +39,11 @@ function G = generate_graph(Adj)
     end
 
     for i = 1:nv
-        G.p(i, i) = 1 - sum(G.p(i, :));
+        try
+            G.p(i, i) = 1 - sum(G.p(i, :));
+        catch
+            tmp = 0;
+        end
     end
 
 end

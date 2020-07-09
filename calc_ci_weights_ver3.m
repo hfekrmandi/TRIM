@@ -75,11 +75,11 @@ function [weights_ci, inf_mat, inf_vect] = calc_ci_weights_ver3(S1, local_inf_ve
         % Make the information matrix symetric in case numerical errors during the summation calculation
         information_matrix = 0.5 * (information_matrix + information_matrix');
 
-        cost_tr = -log(det(information_matrix));
+        cost_det = -log(det(information_matrix));
 
         % cost calculation near the singularity.
-        if isinf(cost_tr)
-            cost_tr = log(det(inv(information_matrix)));
+        if isinf(cost_det)
+            cost_det = log(det(inv(information_matrix)));
         end
 
     end

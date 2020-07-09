@@ -34,6 +34,12 @@ classdef agent < objectDefinition & agent_tools
         dim_state = 2;
         R;
         Q;
+        memory_P_last = [];
+        memory_x_last = [];
+        memory_P = [];
+        memory_x = [];
+        memory_Y_last = [];
+        memory_y_last = [];
         memory_Y = [];
         memory_y = [];
         memory_I = [];
@@ -169,7 +175,7 @@ classdef agent < objectDefinition & agent_tools
             assert(isnumeric(ENV.dt),'The time-step must be a numeric timestep.');
             assert(isstruct(observedobjects),'Second parameter is a vector of observation structures.');
             
-            this.InformationFilter(ENV.dt,observedobjects);
+            %this.InformationFilter(ENV.dt,observedobjects);
             for entry = 1:numel(observedobjects)
                 this = this.UpdateMemoryFromObject(ENV.currentTime, observedobjects(entry));
             end
@@ -234,6 +240,12 @@ classdef agent < objectDefinition & agent_tools
                 % R_0               R_k                 (m*o) x (m*o)
                 % Q_0               Q_k                 (N*n) x (N*n)
             
+            % Store variables from last timestep
+            this.memory_P_last = inv(this.memory_Y);
+            this.memory_x_last = inv(this.memory_Y) * this.memory_y;
+            this.memory_Y_last = this.memory_Y;
+            this.memory_y_last = this.memory_y;
+            
             n = 1 + numel(observedObjects);
             
             Y_11 = this.memory_Y;
@@ -296,7 +308,7 @@ classdef agent < objectDefinition & agent_tools
             n_obs = numel(observedObjects);
             
             F_0 = zeros(n_stored*this.dim_state);
-            Q_0 = 0.01*eye(n_stored*this.dim_state);
+            Q_0 = 1*eye(n_stored*this.dim_state);
             R_0 = 0.01*eye(n_stored*this.dim_obs);
             H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
             z_0 = ones(n_stored*this.dim_obs,1);
@@ -310,7 +322,7 @@ classdef agent < objectDefinition & agent_tools
                 H_0(j,:) = this.Hz_range_2d(x_11, j_this, j);
                 z_0(j) = observedObjects(i).range;
             end
-            % It's easier to compute Hz and divide by z instead of directly computing H
+            % It's easier to compute H*z and divide by z instead of directly computing H
             H_0 = H_0 ./ z_0;
             
             % For each agent, update F
@@ -328,16 +340,18 @@ classdef agent < objectDefinition & agent_tools
             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
             y_01 = L_0*inv(F_0)'*y_11;
             
-%             % Consensus Steps
-%             Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
-%             y_00 = y_01 + H_0'*inv(R_0)*z_0;
+            % Consensus Steps
+            this.memory_Y = Y_01 + H_0'*inv(R_0)*H_0;
+            this.memory_y = y_01 + H_0'*inv(R_0)*z_0;
+            this.memory_P = inv(this.memory_Y);
+            this.memory_x = inv(this.memory_Y) * this.memory_y;
 %             x_00 = inv(Y_00)*y_00;
             
             % Store the consensus variables
-            this.memory_Y = Y_01;
-            this.memory_y = y_01;
-            this.memory_I = H_0'*inv(R_0)*H_0;
-            this.memory_i = H_0'*inv(R_0)*z_0;
+%             this.memory_Y = Y_01;
+%             this.memory_y = y_01;
+%             this.memory_I = H_0'*inv(R_0)*H_0;
+%             this.memory_i = H_0'*inv(R_0)*z_0;
             this.memory_id_list = id_list;
             this.memory_id_obs = observed_ids;
             
@@ -402,6 +416,12 @@ classdef agent < objectDefinition & agent_tools
         end
         
         function [F] = F_2d(this, x, agent1, agent2)
+            n = 2;
+            
+            F = eye(n);
+        end
+        
+        function [F] = F_unicycle_2d(this, x, agent1, agent2)
             n = 2;
             
             F = eye(n);

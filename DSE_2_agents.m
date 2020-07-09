@@ -23,7 +23,7 @@ fprintf('[SETUP]\tInitialising example script.\n');
 sim_outputPath = strcat(userdir,'\desktop\openmas-data');
 sim_vebosity   = 1;
 sim_warningDistance = 2;
-sim_maxDuration = 50;
+sim_maxDuration = 5;
 sim_timeStep    = 0.25;                        % Nominal (0.25s)
 sim_idleTimeOut = 5*sim_timeStep;
 
@@ -35,7 +35,7 @@ sim_publishFigures = false;
 sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 3;
+sim_agentNumber     = 1;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 10;
 sim_agentVelocity   = 5;
@@ -53,7 +53,7 @@ fprintf('[SETUP]\tAssigning agent definitions:\n');
 for index = 1:sim_agentNumber
 % BASIC CLASSES
 %     agentIndex{index} = objectDefinition('radius',sim_agentRadius);     
-     agentIndex{index} = agent('radius',sim_agentRadius);
+%     agentIndex{index} = agent('radius',sim_agentRadius);
 %     agentIndex{index} = agent_test('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D();  
 %     agentIndex{index} = agent_2D_test('radius',sim_agentRadius);
@@ -106,7 +106,7 @@ for index = 1:sim_agentNumber
 %     agentIndex{index} = agent_VO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_HRVO('radius',sim_agentRadius);
-%     agentIndex{index} = agent_2D_VO('radius',sim_agentRadius,'detectionRadius',25);
+     agentIndex{index} = agent_2D_VO('radius',sim_agentRadius,'detectionRadius',25);
 %     agentIndex{index} = agent_2D_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D_HRVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D_RVO2('radius',sim_agentRadius); 
