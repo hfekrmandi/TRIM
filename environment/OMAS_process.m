@@ -145,11 +145,10 @@ while step <= META.TIME.numSteps
     % /////////////////////////////////////////////////////////////////////
     
     % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
-    %agent_data = get_sorted_agent_states(META, objectIndex);
-    %agent_data = apply_comm_model(agent_data);
-    %agent_groups = break_agents_into_groups(META, agent_data);
-    %consensus(agent_groups);
-    %set_pose_from_consensus(META, agent_groups);
+    agent_data = get_sorted_agent_states(META, objectIndex);
+    agent_data = apply_comm_model(agent_data);
+    agent_groups = break_agents_into_groups(META, agent_data);
+    consensus(agent_groups);
     % /////////////////////////////////////////////////////////////////////
     
     % 8. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
@@ -900,6 +899,8 @@ function [agent_groups] = consensus(agent_groups)
         for i = 1:numel(consensus_data{step, group_num})
             agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
             agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
+            agent_groups{group_num}(i).memory_P = inv(consensus_data{step, group_num}{i}.Y);
+            agent_groups{group_num}(i).memory_x = inv(consensus_data{step, group_num}{i}.Y) * consensus_data{step, group_num}{i}.y;
         end
     end
 end
@@ -918,28 +919,6 @@ function [rel_pos] = position_from_id(agent, id)
     agent_high = dim_state*index_agent;
 
     rel_pos = x(meas_low:meas_high) - x(agent_low:agent_high);
-end
-
-function [META] = set_pose_from_consensus(SIM, agent_groups)
-    for group_index = 1:numel(agent_groups)
-        for agent1_index = 1:numel(agent_groups{group_index})
-            for agent2_index = 1:numel(agent_groups{group_index}(agent1_index).MEMORY)
-                agent1 = agent_groups{group_index}(agent1_index);
-                agent2 = agent1.MEMORY(agent2_index);
-                
-                position = position_from_id(agent1, agent2.objectID);
-                position = [0, 0];
-                %agent1.MEMORY(agent2_index).position = position;
-                
-                % Update circular-buffers
-                data = agent1.MEMORY(agent2_index).position;
-                % Attempt to merge data
-                n = numel(data) - 1;
-                data(:,n) = position;
-                agent1.MEMORY(agent2_index).position = data;
-            end
-        end
-    end
 end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////

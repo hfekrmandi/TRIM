@@ -35,7 +35,7 @@ sim_publishFigures = false;
 sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 1;
+sim_agentNumber     = 3;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 10;
 sim_agentVelocity   = 5;
