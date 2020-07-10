@@ -533,26 +533,31 @@ switch SIMfirstObject.type
             relativePosition = SIMfirstObject.relativePositions(ID2,:)';
             relativeVelocity = SIMsecondObject.globalState(4:6) - SIMfirstObject.globalState(4:6);
             % ROTATE THE GLOBAL STATE OF THE OBJECT INTO THE AGENT FRAME
-            observedPosition = SIMfirstObject.R*relativePosition;            % Rotate the from the global into the body frame of the simReference
-            observedVelocity = SIMfirstObject.R*relativeVelocity;
+            %observedPosition = SIMfirstObject.R*relativePosition;         % Rotate the from the global into the body frame of the simReference
+            %observedVelocity = SIMfirstObject.R*relativeVelocity;
+            observedPosition = relativePosition(1:2);                           % Rotate the from the global into the body frame of the simReference
+            observedVelocity = relativeVelocity;
             % SPHERICAL REPRESENTATION
-            observedRange     = norm(observedPosition);
+            observedRange    = norm(observedPosition);
+            
+            noise_sigma = 0.1;
+            noise = noise_sigma*eye(2);
+            observedz = observedPosition + mvnrnd(zeros(1, 2), noise)';
+            
             if SIMsecondObject.type == 1
                 % Observed object is an agent, grab the motion model and Q
-                observedz         = norm(observedPosition);
                 observedF         = eye(2);
                 observedQ         = secondObject.Q;
             else
                 % Observed object is an immobile object, motion model and Q = 0
-                observedz         = norm(observedPosition);
                 observedF         = zeros(2);
                 observedQ         = 0;
             end
-            observedElevation = asin(observedPosition(3)/observedRange);
-            observedHeading   = atan2(observedPosition(2),observedPosition(1));
+            %observedElevation = asin(observedPosition(3)/observedRange);
+            %observedHeading   = atan2(observedPosition(2),observedPosition(1));
             % PRESENT SIZE PROPERTIES
-            observedRadius    = SIMfirstObject.radius;     
-            observedAngularWidth = 2*asin(observedRadius/(observedRange + observedRadius));               
+            %observedRadius    = SIMfirstObject.radius;     
+            %observedAngularWidth = 2*asin(observedRadius/(observedRange + observedRadius));               
                         
             % OBJECT GEOMETRY PREPARATION
             % In order for the agent to observe the object correctly. The
@@ -565,26 +570,6 @@ switch SIMfirstObject.type
             %   object will be visable to the agent. a process must be in
             %   place to create a subset of the geometry.
 
-            % THE GEOMETRIC PARAMETERS
-            if size(secondObject.GEOMETRY.vertices,1) > 0
-                % Rotate evaluation object geometry into the global space,
-                % then rotate it back into the local space of the reference.                
-                % THE RELATIVE ROTATIONS OF THE SECOND BODY
-                relativeR = SIMfirstObject.R'*SIMsecondObject.R; 
-                % THE CONTAINER FOR THE RELATIVE GEOMETRY
-                observedGeometry = struct('vertices',secondObject.GEOMETRY.vertices*relativeR + observedPosition',...
-                                          'normals', secondObject.GEOMETRY.normals*relativeR,...
-                                          'faces',   secondObject.GEOMETRY.faces,...
-                                          'centroid',secondObject.GEOMETRY.centroid + observedPosition');
-                % [TO-DO] Reduce the structure sent to match the exposed geometry                      
-                                      
-%                 % PROCESS THE VISIBLE GEOMETRY (The sub-set of the geometry that is visible to the agent.)
-%                 observedGeometry = OMAS_restrictedGeometry(zeros(3,1),SIMfirstObject.detectionRadius,relativeGeometry);                   
-            else
-                % THE OBSERVED GEOMETRY IS EMPTY
-                observedGeometry = secondObject.GEOMETRY;                  % Pass the empty structure
-            end
-            
             % OBJECT PRIORITY (IF WAYPOINT)
             observedPriority = NaN;
             if SIMsecondObject.type == OMAS_objectType.waypoint
@@ -601,17 +586,9 @@ switch SIMfirstObject.type
             detectionObject = struct('objectID',SIMsecondObject.objectID,...            % The object ID (observed)
                                      'name',SIMsecondObject.name,...                    % The object name tag (observed)
                                      'type',SIMsecondObject.type,...                    % The objects sim-type enum
-                                     'radius',observedRadius,...                        % The objects true size
-                                     'position',observedPosition(dimensionIndices,1),...% The apparent position in the relative frame
-                                     'velocity',observedVelocity(dimensionIndices,1),...% The apparent velocity in the relative frame
-                                     'range',observedz,...                              % The apparent range
+                                     'z',observedz,...                                  % The apparent range
                                      'F',observedF,...                                  % The motion model jacobian
                                      'Q',observedQ,...                                  % The motion model covariance
-                                     'id_list',[],...                                   % The motion model covariance
-                                     'elevation',observedElevation,...                  % The apparent inclination angle
-                                     'heading',observedHeading,...                      % The apparent Azimuth angle
-                                     'width',observedAngularWidth,...                   % The apparent angular width at that range    
-                                     'geometry',observedGeometry,...                    % The observable geometrical components
                                      'colour',SIMsecondObject.colour,...                % Finally the simulation's colourID 
                                      'DEBUG',DEBUG);                                    % Pass additional parameters (not otherwise known)
             observationPacket = vertcat(observationPacket,detectionObject);             % Append object to packet to agent

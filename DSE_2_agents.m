@@ -23,7 +23,7 @@ fprintf('[SETUP]\tInitialising example script.\n');
 sim_outputPath = strcat(userdir,'\desktop\openmas-data');
 sim_vebosity   = 1;
 sim_warningDistance = 2;
-sim_maxDuration = 5;
+sim_maxDuration = 20;
 sim_timeStep    = 0.25;                        % Nominal (0.25s)
 sim_idleTimeOut = 5*sim_timeStep;
 
@@ -41,7 +41,7 @@ sim_agentOrbit      = 10;
 sim_agentVelocity   = 5;
 sim_adjacencyMatrix = double(~eye(sim_agentNumber));
 sim_waypointOrbit   = 2;
-sim_waypointRadius  = 1;
+sim_waypointRadius  = 0.5;
 sim_offsetAngle     = pi/4;
 sim_obstacleNumber  = 0;
 sim_obstacleOrbit   = 10;
