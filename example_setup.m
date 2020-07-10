@@ -17,6 +17,7 @@ fprintf('[SETUP]\tInitialising example script.\n');
 %% INITIALISE ANY TOOLBOXES
 % IntLab();   % Load Intlab
 % OMAS_objectDiagnostics()
+% I am adding a new comment here.
 
 %% SIMULATION PARAMETERS
 [~, userdir]   = system('echo %USERPROFILE%');  % Get desktop path
