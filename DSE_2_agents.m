@@ -1,6 +1,7 @@
 %% DEBUG SIMULATION SETUP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all; close all;
+dbstop if error
 
 % ADD THE PROGRAM PATHS
 addpath('environment');
@@ -37,11 +38,11 @@ sim_figureSet = {'isometric'};
 %% SCENARIO PARAMETERS
 sim_agentNumber     = 3;
 sim_agentRadius     = 0.5;
-sim_agentOrbit      = 10;
+sim_agentOrbit      = 3;
 sim_agentVelocity   = 5;
 sim_adjacencyMatrix = double(~eye(sim_agentNumber));
 sim_waypointOrbit   = 2;
-sim_waypointRadius  = 0.5;
+sim_waypointRadius  = 1;
 sim_offsetAngle     = pi/4;
 sim_obstacleNumber  = 0;
 sim_obstacleOrbit   = 10;
@@ -122,14 +123,15 @@ for index = 1:sim_obstacleNumber
 	% OBSTACLES
 %     obstacleIndex{index} = obstacle();
 %     obstacleIndex{index} = obstacle_cuboid();
-     obstacleIndex{index} = obstacle_spheroid();
+     %obstacleIndex{index} = obstacle_spheroid();
 end
 
 %% PLACE AGENT OBJECTS IN PRE-DEFINED SCENARIO
 % FORMATION CONTROL TESTS
 % [ objectIndex ] = GetScenario_corridor('agents',agentIndex,'adjacencyMatrix',sim_adjacencyMatrix,'plot',sim_plotScenario);
 % [ objectIndex ] = GetScenario_formation_split('agents',agentIndex,'agentSpacing',4,'adjacencyMatrix',sim_adjacencyMatrix,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
- [ objectIndex ] = GetScenario_formation_fourObstacles('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',1,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
+% [ objectIndex ] = GetScenario_formation_fourObstacles('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',1,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
+ [ objectIndex ] = Scenario_3_agents_5_waypoints('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',1,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
 
 % % OBSTACLE TESTS
 % [ objectIndex ] = GetScenario_fourCuboidObstacles('agents',agentIndex,'plot',sim_plotScenario);

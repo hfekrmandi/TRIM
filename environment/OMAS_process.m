@@ -980,7 +980,7 @@ switch SIMfirstObject.type
             relativePosition = [position_from_id(firstObject, secondObject.objectID); 0];
             relativeVelocity = SIMsecondObject.globalState(4:6) - SIMfirstObject.globalState(4:6);
             % ROTATE THE GLOBAL STATE OF THE OBJECT INTO THE AGENT FRAME
-            observedPosition = SIMfirstObject.R*relativePosition;            % Rotate the from the global into the body frame of the simReference
+            observedPosition = SIMfirstObject.R*relativePosition;          % Rotate the from the global into the body frame of the simReference
             observedVelocity = SIMfirstObject.R*relativeVelocity;
             % SPHERICAL REPRESENTATION
             observedRange     = norm(observedPosition);
