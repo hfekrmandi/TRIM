@@ -58,7 +58,7 @@ classdef agent_2D_VO < agent_2D & agent_VO
 
             % /////////////////// WAYPOINT TRACKING ///////////////////////
             desiredHeadingVector = this.GetTargetHeading();                    % Design the current desired trajectory from the waypoint.  
-            desiredVelocity      = 0.5*desiredHeadingVector*this.v_nominal;
+            desiredVelocity      = desiredHeadingVector*this.v_nominal;
             
             % ////////////////// OBSTACLE AVOIDANCE ///////////////////////
             % Modify the desired velocity with the augmented avoidance velocity.

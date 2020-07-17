@@ -21,7 +21,9 @@ OMAS_initialize
 					UpdateInformationFilter
 					{
 						% Measurement = relative (x, y) position + noise
-						observedz = observedPosition + mvnrnd(zeros(1, 2), noise);
+						noise_sigma = 10;
+            			noise = noise_sigma*eye(2);
+						observedz = observedPosition + mvnrnd(zeros(1, 2), noise); - OMAS_process Line 545
 
 						% Pass values to the agents information filter
 						referenceObject.InformationFilter - agent.m Line 240

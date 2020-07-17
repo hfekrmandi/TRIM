@@ -126,7 +126,7 @@ while step <= META.TIME.numSteps
         objectSnapshot = objectIndex;                                      % Make a temporary record of the object set
         parfor (ID1 = 1:META.totalObjects)
             % MOVE THROUGH OBJECT INDEX AND UPDATE EACH AGENT
-            [detection{ID1},objectIndex{ID1},objectEVENTS] = UpdateInformationFilter(META,objectSnapshot,objectIndex{ID1});            
+            [detection{ID1},objectIndex{ID1},objectEVENTS] = UpdateInformationFilter(META,objectSnapshot,objectIndex{ID1});
             % LOG THE OBJECT EVENTS
             if ~isempty(objectEVENTS)
                 EVENTS = vertcat(EVENTS,objectEVENTS);
@@ -460,7 +460,7 @@ for entityA = 1:SIM.totalObjects
         end     
     end
 end
-       
+
 end
 % UPDATE THE OBJECT PROPERTIES
 function [observationPacket, referenceObject,objectEVENTS] = UpdateInformationFilter(SIM,objectIndex,referenceObject)
@@ -837,6 +837,7 @@ function [consensus_data] = consensus_group(agents, step, num_steps)
         ratio = step / num_steps;
         Y = Y_prior + ratio*size_comp(i)*delta_I;
         y = y_prior + ratio*size_comp(i)*delta_i;
+        
         consensus_data{i}.Y = Y;
         consensus_data{i}.y = y;
         consensus_data{i}.Y_prior = Y_prior;
@@ -849,35 +850,39 @@ end
 function [agent_groups] = consensus(agent_groups)
     num_steps = 20;
     for group_num = 1:numel(agent_groups)
-        
-        % Compute first consensus step
-        step = 1;
-        for i = 1:numel(agent_groups{group_num})
-            consensus_data{step, group_num}{i}.Y_prior = agent_groups{group_num}(i).memory_Y;
-            consensus_data{step, group_num}{i}.y_prior = agent_groups{group_num}(i).memory_y;
-            consensus_data{step, group_num}{i}.delta_I = agent_groups{group_num}(i).memory_I;
-            consensus_data{step, group_num}{i}.delta_i = agent_groups{group_num}(i).memory_i;
-        end
-        
-        % Compute the remaining consensus steps
-        for step = 2:num_steps
-            consensus_data{step, group_num} = consensus_group(agent_groups{group_num}, step, num_steps);
-            
-            % After all agents' variables have been computed, store them
-            for i = 1:numel(consensus_data{step, group_num})
-                agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y_prior;
-                agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y_prior;
-                agent_groups{group_num}(i).memory_I = consensus_data{step, group_num}{i}.delta_I;
-                agent_groups{group_num}(i).memory_i = consensus_data{step, group_num}{i}.delta_i;
+        if numel(agent_groups{group_num}) == 1
+            agent_groups{group_num}.memory_Y = agent_groups{group_num}.memory_Y + agent_groups{group_num}.memory_I;
+            agent_groups{group_num}.memory_y = agent_groups{group_num}.memory_y + agent_groups{group_num}.memory_i;
+        else
+            % Compute first consensus step
+            step = 1;
+            for i = 1:numel(agent_groups{group_num})
+                consensus_data{step, group_num}{i}.Y_prior = agent_groups{group_num}(i).memory_Y;
+                consensus_data{step, group_num}{i}.y_prior = agent_groups{group_num}(i).memory_y;
+                consensus_data{step, group_num}{i}.delta_I = agent_groups{group_num}(i).memory_I;
+                consensus_data{step, group_num}{i}.delta_i = agent_groups{group_num}(i).memory_i;
             end
-        end
-        
-        % Store final consensus in each agent
-        for i = 1:numel(consensus_data{step, group_num})
-            agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
-            agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
-            agent_groups{group_num}(i).memory_P = inv(consensus_data{step, group_num}{i}.Y);
-            agent_groups{group_num}(i).memory_x = inv(consensus_data{step, group_num}{i}.Y) * consensus_data{step, group_num}{i}.y;
+
+            % Compute the remaining consensus steps
+            for step = 2:num_steps
+                consensus_data{step, group_num} = consensus_group(agent_groups{group_num}, step, num_steps);
+
+                % After all agents' variables have been computed, store them
+                for i = 1:numel(consensus_data{step, group_num})
+                    agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y_prior;
+                    agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y_prior;
+                    agent_groups{group_num}(i).memory_I = consensus_data{step, group_num}{i}.delta_I;
+                    agent_groups{group_num}(i).memory_i = consensus_data{step, group_num}{i}.delta_i;
+                end
+            end
+
+            % Store final consensus in each agent
+            for i = 1:numel(consensus_data{step, group_num})
+                agent_groups{group_num}(i).memory_Y = consensus_data{step, group_num}{i}.Y;
+                agent_groups{group_num}(i).memory_y = consensus_data{step, group_num}{i}.y;
+                agent_groups{group_num}(i).memory_P = inv(consensus_data{step, group_num}{i}.Y);
+                agent_groups{group_num}(i).memory_x = inv(consensus_data{step, group_num}{i}.Y) * consensus_data{step, group_num}{i}.y;
+            end
         end
     end
 end
