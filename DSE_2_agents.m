@@ -33,7 +33,7 @@ sim_publishFigures = false;
 % sim_figureSet = {'all'};
 % sim_figureSet = {'events','plan','inputs','isometric','gif'};
 % sim_figureSet = {'plan','avoidance','inputs','isometric','gif'};
-sim_figureSet = {'isometric','gif'};
+sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
 sim_agentNumber     = 1;
@@ -44,7 +44,7 @@ sim_adjacencyMatrix = double(~eye(sim_agentNumber));
 sim_waypointOrbit   = 2;
 sim_waypointRadius  = 1;
 sim_offsetAngle     = pi/4;
-sim_obstacleNumber  = 1;
+sim_obstacleNumber  = 0;
 sim_obstacleOrbit   = 10;
 sim_noiseSigma      = 0.2;
 sim_plotScenario    = true;
@@ -56,7 +56,7 @@ for index = 1:sim_agentNumber
 %     agentIndex{index} = objectDefinition('radius',sim_agentRadius);     
 %     agentIndex{index} = agent('radius',sim_agentRadius);
 %     agentIndex{index} = agent_test('radius',sim_agentRadius);
-%     agentIndex{index} = agent_2D();  
+     agentIndex{index} = agent_2D();  
 %     agentIndex{index} = agent_2D_test('radius',sim_agentRadius);
 
 %     agentIndex{index} = agent_example('radius',sim_agentRadius);
@@ -107,7 +107,8 @@ for index = 1:sim_agentNumber
 %     agentIndex{index} = agent_VO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_HRVO('radius',sim_agentRadius);
-     agentIndex{index} = agent_2D_VO('radius',sim_agentRadius,'detectionRadius',25);
+%     agentIndex{index} = agent_2D('radius',sim_agentRadius,'detectionRadius',25);
+%     agentIndex{index} = agent_2D_unicycle('radius',sim_agentRadius,'detectionRadius',25);
 %     agentIndex{index} = agent_2D_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D_HRVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D_RVO2('radius',sim_agentRadius); 

@@ -248,6 +248,8 @@ for entity = 1:SIM.totalObjects
                           'detectionRadius',objectGLOBAL.detectionRadius,...    % The simulations detection horizon for the aircraft
                                'idleStatus',objectGLOBAL.idleStatus,...         % Agent completed Task Flag
                               'globalState',[objectGLOBAL.position;objectGLOBAL.velocity;objectGLOBAL.quaternion],...
+                              'X',[objectGLOBAL.X],...
+                                        'eulZYX',objectGLOBAL.R,...             % Current Global euler angles
                                         'R',objectGLOBAL.R,...                  % Current Global-Body rotation matrix
                         'relativePositions',zeros(SIM.totalObjects,3),...       % Relative distances between objects [dx;dy;dz]*objectCount
                              'objectStatus',false(SIM.totalObjects,(numel(eventEnums)-1)/2));

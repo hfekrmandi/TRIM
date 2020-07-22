@@ -30,8 +30,8 @@ classdef agent < objectDefinition & agent_tools
         DATA;                           % The output container for agent-side data.
         
         % DSE Variables
-        dim_obs = 2;
-        dim_state = 2;
+        dim_obs = 6;
+        dim_state = 12;
         R;
         Q;
         
@@ -321,7 +321,7 @@ classdef agent < objectDefinition & agent_tools
                     
                     tmp = (1:dim)';
                     tmp(1:size(y_11,1)) = y_11;
-                    y_11 = tmp;
+                    y_11 = tmp*0.01;
                     
                     x_11 = inv(Y_11)*y_11;
                 end
@@ -345,8 +345,8 @@ classdef agent < objectDefinition & agent_tools
                 
                 agent1_row_min = this.dim_obs*(index - 1) + 1;
                 agent1_row_max = agent1_row_min + this.dim_obs - 1;
-            
-                H_0(agent1_row_min:agent1_row_max,:) = this.H_position_2d(x_11, obs_index, index);
+                
+                H_0(agent1_row_min:agent1_row_max,:) = this.H_camera(x_11, obs_index, index);
                 z_0(agent1_row_min:agent1_row_max) = observedObjects(i).z;
                 tmp_z = H_0 * x_11;
             end
@@ -356,7 +356,7 @@ classdef agent < objectDefinition & agent_tools
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
 
-                F_0(i_low:i_high,i_low:i_high) = this.F_2d(x_11, i);
+                F_0(i_low:i_high,i_low:i_high) = this.F(dt);
             end
             
             % Compute the information filter steps
@@ -367,16 +367,17 @@ classdef agent < objectDefinition & agent_tools
             y_01 = L_0*inv(F_0)'*y_11;
             
             % Consensus Steps
-%             this.memory_Y = Y_01 + H_0'*inv(R_0)*H_0;
-%             this.memory_y = y_01 + H_0'*inv(R_0)*z_0;
-%             this.memory_P = inv(this.memory_Y);
-%             this.memory_x = inv(this.memory_Y) * this.memory_y;
-            
+            this.memory_Y = Y_01 + H_0'*inv(R_0)*H_0;
+            this.memory_y = y_01 + H_0'*inv(R_0)*z_0;
+            this.memory_P = inv(this.memory_Y);
+            this.memory_x = inv(this.memory_Y) * this.memory_y;
+             
             % Store the consensus variables
             this.memory_Y = Y_01;
             this.memory_y = y_01;
             this.memory_I = H_0'*inv(R_0)*H_0;
             this.memory_i = H_0'*inv(R_0)*z_0;
+
             this.memory_id_list = id_list;
             this.memory_id_obs = observed_ids;
             
@@ -427,9 +428,21 @@ classdef agent < objectDefinition & agent_tools
             agent2_row_max = agent2_row_min + this.dim_obs - 1;
 
             n_states = size(x,1);
-            H = zeros(2, n_states);
-            H(:,agent1_row_min:agent1_row_max) = -eye(2);
-            H(:,agent2_row_min:agent2_row_max) = eye(2);
+            H = zeros(this.dim_obs, n_states);
+            H(:,agent1_row_min:agent1_row_max) = -eye(this.dim_obs);
+            H(:,agent2_row_min:agent2_row_max) = eye(this.dim_obs);
+        end
+
+        function [H] = H_camera(this, x, agent1, agent2)
+            agent1_row_min = this.dim_obs*(agent1 - 1) + 1;
+            agent1_row_max = agent1_row_min + this.dim_obs - 1;
+            agent2_row_min = this.dim_obs*(agent2 - 1) + 1;
+            agent2_row_max = agent2_row_min + this.dim_obs - 1;
+
+            n_states = size(x,1);
+            H = zeros(this.dim_obs, n_states);
+            H(:,agent1_row_min:agent1_row_max) = -eye(this.dim_obs);
+            H(:,agent2_row_min:agent2_row_max) = eye(this.dim_obs);
         end
 
         function [z] = z_range_2d(this, x, agent1, agent2)
@@ -452,16 +465,14 @@ classdef agent < objectDefinition & agent_tools
             z = sqrt((set_1*x - set_2*x)'*(set_1*x - set_2*x));
         end
         
-        function [F] = F_2d(this, x, agent1, agent2)
-            n = 2;
-            
-            F = eye(n);
+        function [F] = F(this, dt)
+            F = eye(this.dim_state);
+%             block = dt * eye(6);
+%             F(1:6,7:12) = block;
         end
         
         function [F] = F_unicycle_2d(this, x, agent1, agent2)
-            n = 2;
-            
-            F = eye(n);
+            F = eye(this.dim_state);
         end
     end
     

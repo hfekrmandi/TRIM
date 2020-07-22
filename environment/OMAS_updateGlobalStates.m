@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%% UPDATE PROCEDURES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % UPDATE THE GLOBAL STATE VECTORS FROM ENTITY.VIRTUAL
-function [METAObjUpdate]	= OMAS_updateGlobalStates(SIM,objectID,globalVelocity_k,quaternion_k,idleStatus_k)
+function [METAObjUpdate]	= OMAS_updateGlobalStates(SIM,objectID,globalVelocity_k,quaternion_k,globalState_k,idleStatus_k)
 % This function reallocates the global properties of each entity to the 
 % META.OBJECT series to allow faster reference and increased independance
 % of the main cycle from the object cycles.
@@ -30,6 +30,16 @@ METAObjUpdate = SIM.OBJECTS(1,index);                                      % Get
 METAObjUpdate.R = OMAS_geometry.quaternionToRotationMatrix(quaternion_k);
 % UPDATE THE GLOBAL POSITION
 globalPosition_k = METAObjUpdate.globalState(1:3) + globalVelocity_k*SIM.TIME.dt; % Calculate the new global position
+
+% Update information/consensus state
+% pos = globalPosition_k;
+% vel = globalVelocity_k;
+% eul = quat2eul(quaternion_k');
+% eul_vel = 7;
+% METAObjUpdate.X = quat2eul(quaternion_k');
+METAObjUpdate.eulZYX = quat2eul(quaternion_k');
+METAObjUpdate.X = [globalPosition_k;globalVelocity_k;quat2eul(quaternion_k')';globalState_k(10:12)];
+
 % REBUILD GLOBAL STATES (ENTITY & META)
 METAObjUpdate.globalState = [globalPosition_k;globalVelocity_k;quaternion_k]; 
 % DETERMINE IF ENTITY HAS INDICATED THAT TASK IS COMPLETE

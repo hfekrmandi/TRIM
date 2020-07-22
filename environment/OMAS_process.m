@@ -100,6 +100,7 @@ while step <= META.TIME.numSteps
             objectIndex{ID1}.objectID,...
             objectIndex{ID1}.GetGLOBAL('velocity'),...
             objectIndex{ID1}.GetGLOBAL('quaternion'),...
+            objectIndex{ID1}.GetGLOBAL('X'),...
             objectIndex{ID1}.GetGLOBAL('idleStatus')); 
     end
     % /////////////////////////////////////////////////////////////////////
@@ -520,7 +521,7 @@ switch SIMfirstObject.type
             
             % GET THE EQUIVALENT OBJECT TO EVALUATE AGAINST THE REFERENCE
             secondObject = objectIndex{SIM.globalIDvector == SIMsecondObject.objectID};
-                            
+            
             % ///////////////// ELSE AGENT IS DETECTED ////////////////////
             % ////// (GENERATE A LOCALISED PROXIMITY DESCIPTION) //////////
             % The second agent is within global seperation conditions. A
@@ -537,12 +538,15 @@ switch SIMfirstObject.type
             %observedVelocity = SIMfirstObject.R*relativeVelocity;
             observedPosition = relativePosition(1:2);                           % Rotate the from the global into the body frame of the simReference
             observedVelocity = relativeVelocity;
+            observedTheta = SIMsecondObject.eulZYX(1);
             % SPHERICAL REPRESENTATION
             observedRange    = norm(observedPosition);
             
             noise_sigma = 0.1;
-            noise = noise_sigma*eye(2);
-            observedz = observedPosition + mvnrnd(zeros(1, 2), noise)';
+            noise = noise_sigma*eye(6);
+            relative_X = SIMsecondObject.X(1:6) - SIMfirstObject.X(1:6);
+            observedz = relative_X + mvnrnd(zeros(1, 6), noise)';
+%             observedz = [observedPosition; observedTheta] + mvnrnd(zeros(1, 3), noise)';
             
             if SIMsecondObject.type == 1
                 % Observed object is an agent, grab the motion model and Q
@@ -597,14 +601,8 @@ switch SIMfirstObject.type
         % /////////////// COMPUTE THE LOCAL AGENT CYCLE ///////////////////
         % Given the detection object defined for this agent, compute the
         % agents cycle with this information.
-        try
-            % SEND OBJECT OBSERVERATION PACKET TO AGENT
-            referenceObject.InformationFilter(ENV.dt,observationPacket);                      % Hand the current sim TIME object and complete observation packet
-        catch objectProcessError             
-            warning('[%s]: Cycle failed, there was a problem with the object (%s) file, please check: %s',...
-                     SIM.phase,referenceObject.name,objectProcessError.stack(1).name);
-            rethrow(objectProcessError);    
-        end
+        % SEND OBJECT OBSERVERATION PACKET TO AGENT
+        referenceObject.InformationFilter(ENV.dt,observationPacket);
     case OMAS_objectType.obstacle
         % PASSIVE - NO FEEDBACK REQUIRED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         referenceObject = referenceObject.main(ENV);
@@ -853,6 +851,8 @@ function [agent_groups] = consensus(agent_groups)
         if numel(agent_groups{group_num}) == 1
             agent_groups{group_num}.memory_Y = agent_groups{group_num}.memory_Y + agent_groups{group_num}.memory_I;
             agent_groups{group_num}.memory_y = agent_groups{group_num}.memory_y + agent_groups{group_num}.memory_i;
+            agent_groups{group_num}.memory_P = inv(agent_groups{group_num}.memory_Y);
+            agent_groups{group_num}.memory_x = inv(agent_groups{group_num}.memory_Y) * agent_groups{group_num}.memory_y;
         else
             % Compute first consensus step
             step = 1;
@@ -889,7 +889,7 @@ end
 
 function [rel_pos] = position_from_id(agent, id)
 
-    x = inv(agent.memory_Y) * agent.memory_y;
+    x = agent.memory_x;
     index_id = find(id == agent.memory_id_list);
     index_agent = find(agent.objectID == agent.memory_id_list);
     dim_state = agent.dim_state;
@@ -901,6 +901,7 @@ function [rel_pos] = position_from_id(agent, id)
     agent_high = dim_state*index_agent;
 
     rel_pos = x(meas_low:meas_high) - x(agent_low:agent_high);
+    rel_pos = rel_pos(1:2);
 end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////
@@ -1058,14 +1059,8 @@ switch SIMfirstObject.type
         % /////////////// COMPUTE THE LOCAL AGENT CYCLE ///////////////////
         % Given the detection object defined for this agent, compute the
         % agents cycle with this information.
-        try
-            % SEND OBJECT OBSERVERATION PACKET TO AGENT
-            referenceObject.main(ENV,observationPacket);                      % Hand the current sim TIME object and complete observation packet
-        catch objectProcessError             
-            warning('[%s]: Cycle failed, there was a problem with the object (%s) file, please check: %s',...
-                     SIM.phase,referenceObject.name,objectProcessError.stack(1).name);
-            rethrow(objectProcessError);    
-        end
+        % SEND OBJECT OBSERVERATION PACKET TO AGENT
+        referenceObject.main(ENV,observationPacket);
     case OMAS_objectType.obstacle
         % PASSIVE - NO FEEDBACK REQUIRED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         referenceObject = referenceObject.main(ENV);

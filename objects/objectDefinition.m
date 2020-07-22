@@ -213,6 +213,7 @@ classdef objectDefinition < handle
             GLOBAL.position = [0;0;0];                  % Global Cartesian position
             GLOBAL.velocity = [0;0;0];                  % Global Cartesian velocity
             GLOBAL.quaternion = [1;0;0;0];              % Global quaternion pose
+            GLOBAL.X = zeros(12,1);                     % Global 12D state
             GLOBAL.idleStatus = true;                   % object idle logical
             GLOBAL.is3D = true;                         % object operates in 3D logical
             GLOBAL.priorState = [];                            
@@ -388,9 +389,10 @@ classdef objectDefinition < handle
             
             % ///////////////// REASSIGN K+1 PARAMETERS ///////////////////
             this = this.GlobalUpdate_direct(...
-                p_k_plus,...    % Global position at k plius
+                p_k_plus,...    % Global position at k plus
                 v_k_plus,...    % Global velocity at k plus
-                q_k_plus);      % Quaternion at k plus
+                q_k_plus,...    % Quaternion at k plus
+                x_k_plus);      % Local state
         end
         % GLOBAL UPDATE - EULER 6DOF(3DOF) [x y z phi theta psi],[x y psi]
         function [this] = GlobalUpdate(this,dt,eulerState)
@@ -444,11 +446,15 @@ classdef objectDefinition < handle
             % MAP THE LOCAL VELOCITY TO THE GLOBAL AXES
             velocity_k_plus = R_k_plus'*localLinearRates;
             position_k_plus = p_k + dt*v_k;
+            
+            x_k_plus = [position_k_plus; quat2eul(q_k_plus')'; velocity_k_plus; omega];
+            
             % ///////////////// REASSIGN K+1 PARAMETERS ///////////////////
             this = this.GlobalUpdate_direct(...
                 position_k_plus,... 	% Global position at k plius
                 velocity_k_plus,...     % Global velocity at k plus
-                q_k_plus);              % Quaternion at k plus
+                q_k_plus,...    % Quaternion at k plus
+                x_k_plus);              % Quaternion at k plus
         end
         % GLOBAL UPDATE - EULER 6DOF(3DOF) (NO ROTATIONS)
         function [this] = GlobalUpdate_fixedFrame(this,dt,eulerState)
@@ -456,6 +462,7 @@ classdef objectDefinition < handle
             % maintaining a fixed quaternion rotation (constant reference 
             % orientation) in the global ENU frame from a 6DOF state vector 
             % with euler rotations.
+            printf('Halp')
             
             % NOTATION INDICIES
             if this.Is3D
@@ -492,7 +499,7 @@ classdef objectDefinition < handle
                 eulerState);            % The new state for reference
         end
         % GLOBAL UPDATE - DIRECTLY (global default)
-        function [this] = GlobalUpdate_direct(this,p,v,q)
+        function [this] = GlobalUpdate_direct(this,p,v,q,x)
             % Under this notation, the state vector already contains the
             % global parameters of the object.
             % INPUTS:
@@ -508,6 +515,11 @@ classdef objectDefinition < handle
             assert(IsColumn(v,3),'Global velocity must be a 3D column vector [3x1].');
             assert(IsColumn(q,4),'Global pose must be a 4D quaternion vector [4x1].');
             assert(size(this.localState,2) == 1,'The length of the objects state update must match the its local state.');
+            
+            if nargin == 5
+                assert(IsColumn(x,12),'Global pose must be a 12D row vector [1x12].');
+                this.SetGLOBAL('X',x);                	% Reassign teh 12D state
+            end
             
             % ///////////////// REASSIGN K+1 PARAMETERS ///////////////////
             % Convert the quaternion to the equivalent rotation matrix

@@ -48,7 +48,8 @@ classdef agent_tools < objectDefinition
                     % SELECT HIGHEST PRIORITY, BUT NOT ACHIEVED
                     invalidWaypointIDs = this.achievedWaypoints;            % Get the achieved waypoint IDs
                     availableWaypointIDs = waypointMatrix(2,:);            % Get those visable IDs
-                    validWaypoints = availableWaypointIDs ~= invalidWaypointIDs;   % Get those visible IDs that are valid
+                    validWaypoints = setdiff(availableWaypointIDs, invalidWaypointIDs);
+                    %validWaypoints = availableWaypointIDs ~= invalidWaypointIDs;   % Get those visible IDs that are valid
                     % IF NO FURTHER VALID IDs
                     if ~any(validWaypoints)
                         this.targetWaypoint = [];
@@ -293,6 +294,7 @@ classdef agent_tools < objectDefinition
             GLOBAL.position = [0;0;0];          % Global Cartesian position
             GLOBAL.velocity = [0;0;0];          % Global Cartesian velocity
             GLOBAL.quaternion = [1;0;0;0];      % Global quaternion pose
+            GLOBAL.X = zeros(12,1);             % Global 12D state
             GLOBAL.idleStatus = false;          % Object idle logical
             GLOBAL.is3D = true;                 % Object operates in 3D logical
             GLOBAL.priorState = [];

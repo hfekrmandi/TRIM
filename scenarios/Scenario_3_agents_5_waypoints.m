@@ -196,7 +196,7 @@ waypoint_locations(:,:,3) = [[6 0 0];...
     [0 0 0]];
 
 fprintf('[SCENARIO]\tAssigning waypoint definitions:\n'); 
-n_waypoints = size(waypoint_locations, 1);
+n_waypoints = 2;%size(waypoint_locations, 1);
 for agent_num = 1:agentNumber
     for waypoint_num = 1:n_waypoints
         index = n_waypoints*(agent_num - 1) + waypoint_num;
