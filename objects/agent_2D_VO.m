@@ -71,7 +71,10 @@ classdef agent_2D_VO < agent_2D & agent_VO
                 desiredVelocity = desiredHeadingVector*desiredSpeed;
             end
             algorithm_dt = toc(algorithm_start);                           % Stop timing the algorithm
-                   
+            
+%             desiredHeadingVector = 0*desiredHeadingVector;                    % Design the current desired trajectory from the waypoint.  
+%             desiredVelocity      = 0*desiredVelocity;
+            
             % ///////////////////// CONTROLLER ////////////////////////////
             [this] = this.Controller(ENV.dt,desiredVelocity);
             

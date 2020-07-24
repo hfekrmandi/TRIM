@@ -434,9 +434,9 @@ classdef agent < objectDefinition & agent_tools
         end
 
         function [H] = H_camera(this, x, agent1, agent2)
-            agent1_row_min = this.dim_obs*(agent1 - 1) + 1;
+            agent1_row_min = this.dim_state*(agent1 - 1) + 1;
             agent1_row_max = agent1_row_min + this.dim_obs - 1;
-            agent2_row_min = this.dim_obs*(agent2 - 1) + 1;
+            agent2_row_min = this.dim_state*(agent2 - 1) + 1;
             agent2_row_max = agent2_row_min + this.dim_obs - 1;
 
             n_states = size(x,1);
@@ -467,8 +467,8 @@ classdef agent < objectDefinition & agent_tools
         
         function [F] = F(this, dt)
             F = eye(this.dim_state);
-%             block = dt * eye(6);
-%             F(1:6,7:12) = block;
+            block = dt * eye(6);
+            F(1:6,7:12) = block;
         end
         
         function [F] = F_unicycle_2d(this, x, agent1, agent2)

@@ -36,7 +36,7 @@ sim_publishFigures = false;
 sim_figureSet = {'isometric'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 1;
+sim_agentNumber     = 3;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 3;
 sim_agentVelocity   = 5;
@@ -107,7 +107,7 @@ for index = 1:sim_agentNumber
 %     agentIndex{index} = agent_VO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_HRVO('radius',sim_agentRadius);
-%     agentIndex{index} = agent_2D('radius',sim_agentRadius,'detectionRadius',25);
+%     agentIndex{index} = agent_2D_VO('radius',sim_agentRadius,'detectionRadius',25);
 %     agentIndex{index} = agent_2D_unicycle('radius',sim_agentRadius,'detectionRadius',25);
 %     agentIndex{index} = agent_2D_RVO('radius',sim_agentRadius);
 %     agentIndex{index} = agent_2D_HRVO('radius',sim_agentRadius);

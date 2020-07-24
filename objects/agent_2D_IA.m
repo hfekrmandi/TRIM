@@ -64,7 +64,7 @@ classdef agent_2D_IA < agent_2D_vectorSharing & agent_interval
             % ////////////////// OBSTACLE AVOIDANCE ///////////////////////
             % Modify the desired velocity with the augmented avoidance velocity.
             algorithm_start = tic; algorithm_indicator = 0;
-            if ~isempty([obstacleSet,agentSet])
+            if ~isempty([obstacleSet,agentSet'])
                 algorithm_indicator = 1;
                 % GET THE UPDATED DESIRED VELOCITY
                 [avoidanceHeading,avoidanceSpeed] = this.GetAvoidanceCorrection(nominalVelocity,visualiseProblem);
@@ -130,7 +130,8 @@ classdef agent_2D_IA < agent_2D_vectorSharing & agent_interval
                 
                 % NEIGHBOUR CONDITIONS
                 neighbourConditionA = i > obj.maxNeighbours;               % Maximum number of neighbours
-                neighbourConditionB = inf(obj.inorm(p_j)) > obj.neighbourDist;   % [CONFIRMED] 
+                neighbourConditionB = inf(size(obj.neighbourDist)) > obj.neighbourDist;
+                %neighbourConditionB = inf(obj.inorm(p_j)) > obj.neighbourDist;   % [CONFIRMED]
 %                 neighbourConditionC = ~any(isnan(v_j));                 % Wait for a valid velocity reading
                 if neighbourConditionA || neighbourConditionB 
                     continue
