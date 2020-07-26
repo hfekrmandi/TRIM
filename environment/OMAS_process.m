@@ -152,7 +152,31 @@ while step <= META.TIME.numSteps
     consensus(agent_groups);
     % /////////////////////////////////////////////////////////////////////
     
-    % 8. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
+    % 8. ///////////////// RECORD ESTIMATED STATE (@t=k) /////////////////////
+    for index = 1:numel(agent_data)
+        % Collect the META.OBJECTS.state data (as the simulations understanding of the global states) 
+        % and save to the output DATA.globalTrajectories set, must be done synchronously).
+        agent = agent_data{index};
+        X_agent = agent.memory_x;
+        IDs = agent.memory_id_list;
+        DATA.ids(index, :, META.TIME.currentStep) = IDs';
+        for ID = IDs
+            X_zero = agent.state_from_id(X_agent, IDs, agent.objectID);
+            X_estimate = agent.state_from_id(X_agent, IDs, ID);
+            X_relative = X_estimate - X_zero;
+            DATA.estimates_rel(index, ID, :, META.TIME.currentStep) = X_relative;
+%             DATA.estimates(index, ID, :, META.TIME.currentStep) = X_relative + ;
+
+            X_gt_agent = META.OBJECTS(agent.objectID).X;
+            X_gt_object = META.OBJECTS(ID).X;
+            X_gt_relative = X_gt_object - X_gt_agent;
+            DATA.estimate_errors(index, ID, :, META.TIME.currentStep) = X_relative - X_gt_relative;
+%             DATA.estimate_errors(index, ID, :, META.TIME.currentStep) = X_gt_relative;
+        end
+    end
+    % /////////////////////////////////////////////////////////////////////
+    
+    % 9. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
     % update_agents_from_consensus(META, detection, objectIndex)
     if META.threadPool ~= 0
         objectSnapshot = objectIndex;                                      % Make a temporary record of the object set
@@ -176,7 +200,7 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 9. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
+    % 10. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
     step = step + 1;
 end
 % CREATE TERMINAL VALUES, FOR CLARITY
@@ -544,6 +568,8 @@ switch SIMfirstObject.type
             
             noise_sigma = 0.1;
             noise = noise_sigma*eye(6);
+            % Add camera-specific noise
+            % [x y z phi theta psi dx dy dz dphi dtheta dpsi]
             relative_X = SIMsecondObject.X(1:6) - SIMfirstObject.X(1:6);
             observedz = relative_X + mvnrnd(zeros(1, 6), noise)';
 %             observedz = [observedPosition; observedTheta] + mvnrnd(zeros(1, 3), noise)';
@@ -920,7 +946,7 @@ function update_agents_from_consensus(SIM, detection, objectIndex)
         end
     end
 end
-
+        
 % UPDATE THE OBJECT PROPERTIES
 function [referenceObject,objectEVENTS] = UpdateObject(SIM,objectIndex,referenceObject)
 % This function updates a referenceObject class against the rest of the
@@ -1087,6 +1113,8 @@ function [DATA] = GetOutputStructure(SIM)
 globalStateNum = size(SIM.OBJECTS(1).globalState,1);
 systemStates = globalStateNum*SIM.totalObjects;                            % The total number of system states
 % DEFINE THE GLOBAL STATE INDICES
+id_initial = zeros(SIM.totalAgents, length(SIM.OBJECTS), SIM.TIME.numSteps);
+estimate_initial = zeros(SIM.totalAgents, SIM.totalObjects, 12, SIM.TIME.numSteps);
 indexSet = zeros(2,length(SIM.OBJECTS));                                   % Indices are defined [start;end]*n
 indexSet(1,:) = (0:globalStateNum:systemStates-globalStateNum) + 1;        % Declare the state indices
 indexSet(2,:) = globalStateNum:globalStateNum:systemStates;
@@ -1101,6 +1129,12 @@ DATA = struct('outputPath',[SIM.outputPath,'DATA.mat'],...
               'timeVector',SIM.TIME.timeVector,...
                       'dt',SIM.TIME.dt,...
               'stateIndex',indexSet,...
+                     'ids',id_initial,...
+           'estimates_rel',estimate_initial,...
+     'estimate_errors_rel',estimate_initial,...
+               'estimates',estimate_initial,...
+         'estimate_errors',estimate_initial,...
+     'estimate_covariance',[],...
       'globalTrajectories',NaN(systemStates,SIM.TIME.numSteps));         % Prepare the output container
 %       'globalTrajectories',zeros(systemStates,SIM.TIME.numSteps));         % Prepare the output container
 end

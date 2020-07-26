@@ -332,7 +332,7 @@ classdef agent < objectDefinition & agent_tools
             n_obs = numel(observedObjects);
             
             F_0 = zeros(n_stored*this.dim_state);
-            Q_0 = 1*eye(n_stored*this.dim_state);
+            Q_0 = 0.025;
             R_0 = 0.01*eye(n_stored*this.dim_obs);
             H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
             z_0 = ones(n_stored*this.dim_obs,1);
@@ -358,6 +358,8 @@ classdef agent < objectDefinition & agent_tools
 
                 F_0(i_low:i_high,i_low:i_high) = this.F(dt);
             end
+            
+            Q_0 = Q_0 * F_0;
             
             % Compute the information filter steps
             M_0 = inv(F_0)'*Y_11*inv(F_0);

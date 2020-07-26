@@ -33,10 +33,10 @@ sim_publishFigures = false;
 % sim_figureSet = {'all'};
 % sim_figureSet = {'events','plan','inputs','isometric','gif'};
 % sim_figureSet = {'plan','avoidance','inputs','isometric','gif'};
-sim_figureSet = {'isometric'};
+sim_figureSet = {'estimates_rel'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 3;
+sim_agentNumber     = 2;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 3;
 sim_agentVelocity   = 5;
