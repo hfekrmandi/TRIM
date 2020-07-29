@@ -58,12 +58,15 @@ for ID1 = 1:DATA.totalAgents
     [objectStates] = OMAS_getTrajectoryData(DATA.globalTrajectories,SIM.globalIDvector,SIM.OBJECTS(ID1).objectID,idleFlag);
     agent_pos = objectStates(1:3,:);
     for ID2 = 1:DATA.totalObjects
-        positions = agent_pos + squeeze(DATA.estimates_rel(ID1, ID2, 1:3, :));
-        % EXTRACT STATE TIME-SERIES DATA UPTO THE IDLE POINT
-        plot3(positions(1,:),positions(2,:),positions(3,:),...
-              'LineStyle',DATA.figureProperties.lineStyle,...
-              'LineWidth',DATA.figureProperties.lineWidth,...
-              'Color',SIM.OBJECTS(ID1).colour);
+        if SIM.OBJECTS(ID2).type == 1
+            positions = agent_pos + squeeze(DATA.estimates_rel(ID1, ID2, 1:3, :));
+            time = (1:size(positions,2)) / 10;
+            % EXTRACT STATE TIME-SERIES DATA UPTO THE IDLE POINT
+            plot3(positions(1,:),positions(2,:),positions(3,:),...
+                  'LineStyle',DATA.figureProperties.lineStyle,...
+                  'LineWidth',DATA.figureProperties.lineWidth,...
+                  'Color',SIM.OBJECTS(ID1).colour);
+        end
     end
 end
 

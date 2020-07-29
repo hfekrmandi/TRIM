@@ -147,9 +147,17 @@ while step <= META.TIME.numSteps
     
     % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
     agent_data = get_sorted_agent_states(META, objectIndex);
-    agent_data = apply_comm_model(agent_data);
+%     agent_data = apply_comm_model_obs(agent_data);
+    if step < 10 || step > 85
+        comm_list = [[2]; [1]];
+    else
+        comm_list = [[1]; [2]];
+    end
+    comm_list = [[2]; [1]];
+    agent_data = apply_comm_model(agent_data, comm_list);
     agent_groups = break_agents_into_groups(META, agent_data);
     consensus(agent_groups);
+    %gt_estimation = gt(agent_data);
     % /////////////////////////////////////////////////////////////////////
     
     % 8. ///////////////// RECORD ESTIMATED STATE (@t=k) /////////////////////
@@ -566,22 +574,33 @@ switch SIMfirstObject.type
             % SPHERICAL REPRESENTATION
             observedRange    = norm(observedPosition);
             
-            noise_sigma = 0.1;
-            noise = noise_sigma*eye(6);
+            %noise_sigma = 0.2;
+            %noise = noise_sigma*eye(6);
             % Add camera-specific noise
             % [x y z phi theta psi dx dy dz dphi dtheta dpsi]
             relative_X = SIMsecondObject.X(1:6) - SIMfirstObject.X(1:6);
+            range = norm(relative_X(1:3));
+            noise = svgs_R_from_range_SRT(range);
             observedz = relative_X + mvnrnd(zeros(1, 6), noise)';
-%             observedz = [observedPosition; observedTheta] + mvnrnd(zeros(1, 3), noise)';
+            
+            % Define the motion model noise as:
+            % STD = 5% of traveled distance
+            % Therefore, 
+            Q_pos = (ENV.dt * norm(SIMsecondObject.X(7:9)) * 0.05)^2;
+            Q_theta = ENV.dt * norm(SIMsecondObject.X(10:12) * 0.05)^2;
             
             if SIMsecondObject.type == 1
                 % Observed object is an agent, grab the motion model and Q
                 observedF         = eye(2);
-                observedQ         = secondObject.Q;
+                observedQ         = zeros(6);
+                observedQ(1:3,1:3)= Q_pos*eye(3);
+                observedQ(4:6,4:6)= Q_theta*eye(3);
             else
                 % Observed object is an immobile object, motion model and Q = 0
                 observedF         = zeros(2);
-                observedQ         = 0;
+                observedQ         = zeros(6);
+                observedQ(1:3,1:3)= Q_pos*eye(3);
+                observedQ(4:6,4:6)= Q_theta*eye(3);
             end
             %observedElevation = asin(observedPosition(3)/observedRange);
             %observedHeading   = atan2(observedPosition(2),observedPosition(1));
@@ -724,7 +743,7 @@ end
 
 % Update the momory_id_comm list in each agent to include each agent they
 % can communicate with (based on a communication model).
-function [agents] = apply_comm_model(agents)
+function [agents] = apply_comm_model_obs(agents)
 
     % Apply communication model and create list of agents each agent can communicate with
     % Current communication model is the same as the observation model
@@ -739,6 +758,23 @@ function [agents] = apply_comm_model(agents)
                 agent.memory_id_comm = [agent.memory_id_comm, agent.memory_id_obs(i)];
             end
         end
+    end
+end
+
+% Update the momory_id_comm list in each agent to include each agent they
+% can communicate with (based on a communication model).
+function [agents] = apply_comm_model(agents, comm_list)
+
+    % Apply communication model and create list of agents each agent can communicate with
+    % Current communication model is the same as the observation model
+    agents_arr = [];
+    for agent = agents
+        agents_arr = [agents_arr, agent{1}];
+    end
+    for index = 1:numel(agents_arr)
+        agent = agents_arr(index);
+        agent_comm_list = comm_list(index,:);
+        agent.memory_id_comm = agent_comm_list;
     end
 end
 
@@ -912,6 +948,10 @@ function [agent_groups] = consensus(agent_groups)
         end
     end
 end
+
+% function [gt_estimation] = gt(agent_data)
+%     y = y_1 + i_1 + i_2;
+% end
 
 function [rel_pos] = position_from_id(agent, id)
 

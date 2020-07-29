@@ -31,6 +31,17 @@ METAObjUpdate.R = OMAS_geometry.quaternionToRotationMatrix(quaternion_k);
 % UPDATE THE GLOBAL POSITION
 globalPosition_k = METAObjUpdate.globalState(1:3) + globalVelocity_k*SIM.TIME.dt; % Calculate the new global position
 
+percentage = 0.05;
+noise_std = 0.0001 * eye(12);
+noise_std(1:3,1:3) = diag((SIM.TIME.dt * globalVelocity_k * percentage).^2);
+noise_std(4:6,4:6) = diag((SIM.TIME.dt * globalState_k(10:12) * percentage).^2);
+noise = mvnrnd(zeros(1, 12), noise_std)';
+
+globalPosition_k = globalPosition_k + noise(1:3);
+quaternion_k = eul2quat(quat2eul(quaternion_k') + noise(4:6)')';
+globalVelocity_k = globalVelocity_k + noise(1:3);
+globalState_k = globalState_k + noise;
+
 % Update information/consensus state
 % pos = globalPosition_k;
 % vel = globalVelocity_k;

@@ -332,8 +332,8 @@ classdef agent < objectDefinition & agent_tools
             n_obs = numel(observedObjects);
             
             F_0 = zeros(n_stored*this.dim_state);
-            Q_0 = 0.025;
-            R_0 = 0.01*eye(n_stored*this.dim_obs);
+            Q_0 = zeros(n_stored*this.dim_state);
+            R_0 = 1*eye(n_stored*this.dim_obs);
             H_0 = zeros(n_stored*this.dim_obs, n_stored*this.dim_state);
             z_0 = ones(n_stored*this.dim_obs,1);
             
@@ -343,11 +343,14 @@ classdef agent < objectDefinition & agent_tools
                 index = find(id_list==id);
                 obs_index = find(id_list==this.objectID);
                 
-                agent1_row_min = this.dim_obs*(index - 1) + 1;
-                agent1_row_max = agent1_row_min + this.dim_obs - 1;
+                i_low = this.dim_obs*(index - 1) + 1;
+                i_high = i_low + this.dim_obs - 1;
                 
-                H_0(agent1_row_min:agent1_row_max,:) = this.H_camera(x_11, obs_index, index);
-                z_0(agent1_row_min:agent1_row_max) = observedObjects(i).z;
+                range = norm(observedObjects(i).z(1:3));
+                R_0(i_low:i_high,i_low:i_high) = svgs_R_from_range_SRT(range);
+                H_0(i_low:i_high,:) = this.H_camera(x_11, obs_index, index);
+                z_0(i_low:i_high) = observedObjects(i).z;
+                
                 tmp_z = H_0 * x_11;
             end
             
@@ -355,11 +358,22 @@ classdef agent < objectDefinition & agent_tools
             for i = 1:numel(id_list)
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
-
+                
+                Q_pos = (dt * norm(x_11(i_low+6:i_low+8)) * 0.05)^2;
+                Q_theta = (dt * norm(x_11(i_low+9:i_low+11)) * 0.05)^2;
+                Q_agent = 1 * eye(12);
+                Q_agent(7:9,7:9) = 0.0001 * eye(3);
+                Q_agent(10:12,10:12) = 0.01 * eye(3);
+                if Q_pos > 0
+                    Q_agent(1:3,1:3) = Q_pos*eye(3);
+                end
+                if Q_theta > 0
+                    Q_agent(4:6,4:6) = Q_theta*eye(3);
+                end
+                Q_0(i_low:i_high,i_low:i_high) = Q_agent;
+                
                 F_0(i_low:i_high,i_low:i_high) = this.F(dt);
             end
-            
-            Q_0 = Q_0 * F_0;
             
             % Compute the information filter steps
             M_0 = inv(F_0)'*Y_11*inv(F_0);
@@ -373,6 +387,15 @@ classdef agent < objectDefinition & agent_tools
             this.memory_y = y_01 + H_0'*inv(R_0)*z_0;
             this.memory_P = inv(this.memory_Y);
             this.memory_x = inv(this.memory_Y) * this.memory_y;
+            
+            % P_kal = P_inf_2
+            % P_01 = F_0*P_11*(F_0') + Q_0
+            P_kal = F_0*inv(Y_11)*(F_0') + Q_0;
+            P_kal_2 = F_0*inv(Y_01)*(F_0') + Q_0;
+            P_kal_3 = F_0*inv(this.memory_Y)*(F_0') + Q_0;
+            P_inf = inv(Y_11);
+            P_inf_2 = inv(Y_01);
+            P_inf_3 = inv(this.memory_Y);
              
             % Store the consensus variables
             this.memory_Y = Y_01;

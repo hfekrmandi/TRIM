@@ -33,7 +33,7 @@ sim_publishFigures = false;
 % sim_figureSet = {'all'};
 % sim_figureSet = {'events','plan','inputs','isometric','gif'};
 % sim_figureSet = {'plan','avoidance','inputs','isometric','gif'};
-sim_figureSet = {'estimates_rel'};
+sim_figureSet = {'estimates_rel', 'estimate_errors'};
 
 %% SCENARIO PARAMETERS
 sim_agentNumber     = 2;
