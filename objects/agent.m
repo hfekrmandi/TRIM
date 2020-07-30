@@ -15,9 +15,9 @@ classdef agent < objectDefinition & agent_tools
     % aerial or ground based.
     properties
         % DEFAULT BEHAVIOUR
-        v_nominal = 2;                  % Default nominal linear speed (m/s)
-        v_max  = 4;                     % Default maximal linear speed (m/s)
-        w_max  = 0.5;                   % Default maximal angular speed (rad/s)
+        v_nominal = 1;                  % Default nominal linear speed (m/s)
+        v_max  = 2;                     % Default maximal linear speed (m/s)
+        w_max  = 1;                   % Default maximal angular speed (rad/s)
         detectionRadius = inf;
         % WAYPOINTS
         targetWaypoint;                 % The current waypoint target
@@ -359,8 +359,8 @@ classdef agent < objectDefinition & agent_tools
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
                 
-                Q_pos = (dt * norm(x_11(i_low+6:i_low+8)) * 0.05)^2;
-                Q_theta = (dt * norm(x_11(i_low+9:i_low+11)) * 0.05)^2;
+                Q_pos = (dt * (norm(x_11(i_low+6:i_low+8)) + 0.5) * 0.05)^2;
+                Q_theta = (dt * (norm(x_11(i_low+9:i_low+11)) + 5) * 0.05)^2;
                 Q_agent = 1 * eye(12);
                 Q_agent(7:9,7:9) = 0.0001 * eye(3);
                 Q_agent(10:12,10:12) = 0.01 * eye(3);

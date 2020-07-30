@@ -24,8 +24,8 @@ fprintf('[SETUP]\tInitialising example script.\n');
 sim_outputPath = strcat(userdir,'\desktop\openmas-data');
 sim_vebosity   = 1;
 sim_warningDistance = 2;
-sim_maxDuration = 50;
-sim_timeStep    = 0.25;                        % Nominal (0.25s)
+sim_maxDuration = 35;
+sim_timeStep    = 0.5;                        % Nominal (0.25s)
 sim_idleTimeOut = 5*sim_timeStep;
 
 sim_publishFigures = false;

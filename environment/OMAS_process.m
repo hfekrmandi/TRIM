@@ -114,7 +114,19 @@ while step <= META.TIME.numSteps
 %         META.OBJECTS(ID1) = updateVisuals(META.OBJECTS(ID1));
 %     end
     
-    % 5. //////// UPDATE SIMULATION/ENVIRONMENTAL META DATA (@t=k) ////////
+    %  5. ////////////// UPDATE Communication matrix (@t=k) ///////////////
+    if step < 20 || step > 50
+        comm_list = [[1, 2]; [1, 2]];
+%         comm_list = {{1, 2}; {1, 2}; {3}};
+%         comm_list = [[1, 2, 3]; [1, 2, 3]; [1, 2, 3]];
+    else
+        comm_list = [[1]; [2]];
+%         comm_list = [[1]; [2]; [3]];
+%         comm_list = [[3]; [3]; [1, 2]];
+    end
+    objectIndex = apply_comm_model(META, objectIndex, comm_list);
+
+    % 6. //////// UPDATE SIMULATION/ENVIRONMENTAL META DATA (@t=k) ////////
     [META,metaEVENTS] = UpdateSimulationMeta(META,objectIndex);            % Update META snapshot with equivilant objectIndex.state
     % LOG THE META EVENTS
     if ~isempty(metaEVENTS)                                                % If META events occurred this timestep
@@ -122,7 +134,7 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 6. ////////// COMPUTE INFORMATION FILTER ESTIMATION (@t=k) //////////
+    % 7. ////////// COMPUTE INFORMATION FILTER ESTIMATION (@t=k) //////////
     if META.threadPool ~= 0
         objectSnapshot = objectIndex;                                      % Make a temporary record of the object set
         parfor (ID1 = 1:META.totalObjects)
@@ -145,29 +157,27 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 7. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
+    % 8. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
     agent_data = get_sorted_agent_states(META, objectIndex);
 %     agent_data = apply_comm_model_obs(agent_data);
-    if step < 10 || step > 85
-        comm_list = [[2]; [1]];
-    else
-        comm_list = [[1]; [2]];
-    end
-    comm_list = [[2]; [1]];
-    agent_data = apply_comm_model(agent_data, comm_list);
+%     agent_data = apply_comm_model(agent_data, comm_list);
     agent_groups = break_agents_into_groups(META, agent_data);
     consensus(agent_groups);
     %gt_estimation = gt(agent_data);
     % /////////////////////////////////////////////////////////////////////
     
-    % 8. ///////////////// RECORD ESTIMATED STATE (@t=k) /////////////////////
+    % 9. ///////////////// RECORD ESTIMATED STATE (@t=k) /////////////////////
     for index = 1:numel(agent_data)
         % Collect the META.OBJECTS.state data (as the simulations understanding of the global states) 
         % and save to the output DATA.globalTrajectories set, must be done synchronously).
         agent = agent_data{index};
         X_agent = agent.memory_x;
         IDs = agent.memory_id_list;
-        DATA.ids(index, :, META.TIME.currentStep) = IDs';
+        Obs = agent.memory_id_obs;
+        Comm = agent.memory_id_comm;
+        DATA.ids(index, 1:numel(IDs), META.TIME.currentStep) = IDs';
+        DATA.Observations(index, 1:numel(Obs), META.TIME.currentStep) = Obs';
+        DATA.Connections(index, 1:numel(Comm), META.TIME.currentStep) = Comm';
         for ID = IDs
             X_zero = agent.state_from_id(X_agent, IDs, agent.objectID);
             X_estimate = agent.state_from_id(X_agent, IDs, ID);
@@ -184,7 +194,7 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 9. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
+    % 10. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
     % update_agents_from_consensus(META, detection, objectIndex)
     if META.threadPool ~= 0
         objectSnapshot = objectIndex;                                      % Make a temporary record of the object set
@@ -208,7 +218,7 @@ while step <= META.TIME.numSteps
     end
     % /////////////////////////////////////////////////////////////////////
     
-    % 10. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
+    % 11. /// THE 'OBJECT.VIRTUAL' PROPERTIES IS NOW UPDATED FOR (t=k+1) ///
     step = step + 1;
 end
 % CREATE TERMINAL VALUES, FOR CLARITY
@@ -543,11 +553,23 @@ switch SIMfirstObject.type
         for ID2 = 1:SIM.totalObjects
             % GET THE SIM OBJECT OF THE EVALUATION OBJECT
             SIMsecondObject = SIM.OBJECTS(ID2);
+            firstObject = objectIndex{SIMfirstObject.objectID};
+            comm_list = firstObject.memory_id_comm;
+            index = find(comm_list == ID2);
+            if ~isempty(index)
+                isConnected = true;
+            else
+                isConnected = false;
+            end
             
             % Skip condition - Get the current status of this object
             isDetected = 1 == SIMfirstObject.objectStatus(ID2,eventType.detection);
             isSameObject = SIMfirstObject.objectID == SIMsecondObject.objectID; 
             if ~isDetected || isSameObject
+                continue
+            end
+            
+            if ~isConnected && SIMsecondObject.type == 1
                 continue
             end
             
@@ -763,13 +785,16 @@ end
 
 % Update the momory_id_comm list in each agent to include each agent they
 % can communicate with (based on a communication model).
-function [agents] = apply_comm_model(agents, comm_list)
+function [agents] = apply_comm_model(SIM, agents, comm_list)
 
     % Apply communication model and create list of agents each agent can communicate with
     % Current communication model is the same as the observation model
     agents_arr = [];
-    for agent = agents
-        agents_arr = [agents_arr, agent{1}];
+    for id = 1:numel(agents)
+        agent = agents{id};
+        if SIM.OBJECTS(agent.objectID).type == 1
+            agents_arr = [agents_arr, agent];
+        end
     end
     for index = 1:numel(agents_arr)
         agent = agents_arr(index);
@@ -1153,7 +1178,8 @@ function [DATA] = GetOutputStructure(SIM)
 globalStateNum = size(SIM.OBJECTS(1).globalState,1);
 systemStates = globalStateNum*SIM.totalObjects;                            % The total number of system states
 % DEFINE THE GLOBAL STATE INDICES
-id_initial = zeros(SIM.totalAgents, length(SIM.OBJECTS), SIM.TIME.numSteps);
+id_initial = zeros(SIM.totalAgents, SIM.totalObjects, SIM.TIME.numSteps);
+comm_initial = zeros(SIM.totalAgents, SIM.totalAgents, SIM.TIME.numSteps);
 estimate_initial = zeros(SIM.totalAgents, SIM.totalObjects, 12, SIM.TIME.numSteps);
 indexSet = zeros(2,length(SIM.OBJECTS));                                   % Indices are defined [start;end]*n
 indexSet(1,:) = (0:globalStateNum:systemStates-globalStateNum) + 1;        % Declare the state indices
@@ -1170,6 +1196,8 @@ DATA = struct('outputPath',[SIM.outputPath,'DATA.mat'],...
                       'dt',SIM.TIME.dt,...
               'stateIndex',indexSet,...
                      'ids',id_initial,...
+            'Observations',id_initial,...
+             'Connections',comm_initial,...
            'estimates_rel',estimate_initial,...
      'estimate_errors_rel',estimate_initial,...
                'estimates',estimate_initial,...

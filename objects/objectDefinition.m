@@ -385,6 +385,7 @@ classdef objectDefinition < handle
             R_k_plus = quat2rotm(q_k_plus');         
             % MAP THE LOCAL VELOCITY TO THE GLOBAL AXES
             v_k_plus = R_k_plus'*localLinearRates;
+            
             p_k_plus = p_k + dt*v_k;
             
             % ///////////////// REASSIGN K+1 PARAMETERS ///////////////////
