@@ -359,8 +359,8 @@ classdef agent < objectDefinition & agent_tools
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
                 
-                Q_pos = (dt * (norm(x_11(i_low+6:i_low+8)) + 0.5) * 0.05)^2;
-                Q_theta = (dt * (norm(x_11(i_low+9:i_low+11)) + 5) * 0.05)^2;
+                Q_pos = (dt * (norm(x_11(i_low+6:i_low+8)) + 0.5) * 0.2)^2;
+                Q_theta = (dt * (norm(x_11(i_low+9:i_low+11)) + 5) * 0.2)^2;
                 Q_agent = 1 * eye(12);
                 Q_agent(7:9,7:9) = 0.0001 * eye(3);
                 Q_agent(10:12,10:12) = 0.01 * eye(3);
@@ -382,21 +382,6 @@ classdef agent < objectDefinition & agent_tools
             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
             y_01 = L_0*inv(F_0)'*y_11;
             
-            % Consensus Steps
-            this.memory_Y = Y_01 + H_0'*inv(R_0)*H_0;
-            this.memory_y = y_01 + H_0'*inv(R_0)*z_0;
-            this.memory_P = inv(this.memory_Y);
-            this.memory_x = inv(this.memory_Y) * this.memory_y;
-            
-            % P_kal = P_inf_2
-            % P_01 = F_0*P_11*(F_0') + Q_0
-            P_kal = F_0*inv(Y_11)*(F_0') + Q_0;
-            P_kal_2 = F_0*inv(Y_01)*(F_0') + Q_0;
-            P_kal_3 = F_0*inv(this.memory_Y)*(F_0') + Q_0;
-            P_inf = inv(Y_11);
-            P_inf_2 = inv(Y_01);
-            P_inf_3 = inv(this.memory_Y);
-             
             % Store the consensus variables
             this.memory_Y = Y_01;
             this.memory_y = y_01;
@@ -406,17 +391,6 @@ classdef agent < objectDefinition & agent_tools
             this.memory_id_list = id_list;
             this.memory_id_obs = observed_ids;
             
-%             % Update the position of each object with the filtered position
-%             estimatedObjects = observedObjects;
-%             for i = numel(estimatedObjects)
-%                 id = estimatedObjects(i).objectID;
-%                 my_pos = [this.state_from_id(x_00, id_list, this.objectID); 0];
-%                 pos = estimatedObjects(i).position;
-%                 est_pos = [this.state_from_id(x_00, id_list, id); 0];
-%                 true_range = norm(pos);
-%                 est_range = norm(my_pos - est_pos);
-%                 estimatedObjects(i).position = est_pos;
-%             end
         end
         
         function [ret] = state_from_id(this, x, id_list, id)

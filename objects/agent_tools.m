@@ -59,7 +59,17 @@ classdef agent_tools < objectDefinition
                     end
                     
                     % SELECT REMAINING WAYPOINTS
-                    validWaypoints = waypointMatrix(:,validWaypoints); % Get waypoinSet location, IDs and priority of valid waypoints
+                    if numel(validWaypoints) > 1
+                        index = [];
+                        for i = 1:numel(validWaypoints)
+                            arr = waypointMatrix(2,:);
+                            val = validWaypoints(i);
+                            index = [index, find(waypointMatrix(2,:) == validWaypoints(i))];
+                        end
+                    else
+                        index = find(waypointMatrix(2,:) == validWaypoints);
+                    end
+                    validWaypoints = waypointMatrix(:,index); % Get waypoinSet location, IDs and priority of valid waypoints
                     % SELECT WAYPOINT OF NEXT HIGHEST PRIORITY
                     [~,maxValidIndex ] = max(validWaypoints(3,:));       % Get the index of max priority waypoint
                     waypointSetIndex = validWaypoints(1,maxValidIndex);  % Get the location of the target waypoint in the waypoint set

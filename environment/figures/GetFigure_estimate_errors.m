@@ -16,6 +16,19 @@ for ID1 = 1:DATA.totalAgents
     idleFlag = NaN('double');
     [objectStates] = OMAS_getTrajectoryData(DATA.globalTrajectories,SIM.globalIDvector,SIM.OBJECTS(ID1).objectID,idleFlag);
     agent_pos = objectStates(1:3,:);
+    
+    connected_time = 1 - squeeze(DATA.Connections(2, 2, :) / 3);
+    connected_time = connected_time'.*(1:numel(connected_time));
+    if sum(connected_time) > 0
+        start = min(connected_time(connected_time > 0)) * DATA.dt;
+        finish = max(connected_time) * DATA.dt;
+        
+        y_max = 1.2;
+        x = [start, start, finish, finish];
+        y = [0, y_max, y_max, 0];
+        fill(x, y, 'k', 'facealpha', 0.2,'edgecolor','none','HandleVisibility','off');
+    end
+    
     for ID2 = 1:DATA.totalObjects
         if SIM.OBJECTS(ID2).type == 1 && ID1 ~= ID2
             % GET OBJECT OVERVIEW DATA
@@ -54,7 +67,7 @@ xlabel(ax,'time (seconds)',...
     'FontSize',DATA.figureProperties.axisFontSize,...
     'FontSmoothing','on');
 % Y-Label
-ylabel(ax,'x+y summed error (m)',...
+ylabel(ax,'position estimation error magnitude ||E|| (m)',...
     'Interpreter',DATA.figureProperties.interpreter,...
     'fontname',DATA.figureProperties.fontName,...
     'Fontweight',DATA.figureProperties.fontWeight,...

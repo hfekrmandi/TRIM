@@ -62,7 +62,7 @@ for ID1 = 1:DATA.totalAgents
             positions = agent_pos + squeeze(DATA.estimates_rel(ID1, ID2, 1:3, :));
             time = (1:size(positions,2)) / 10;
             % EXTRACT STATE TIME-SERIES DATA UPTO THE IDLE POINT
-            plot3(positions(1,:),positions(2,:),positions(3,:),...
+            plot(positions(1,:),positions(2,:),...
                   'LineStyle',DATA.figureProperties.lineStyle,...
                   'LineWidth',DATA.figureProperties.lineWidth,...
                   'Color',SIM.OBJECTS(ID1).colour);
@@ -123,9 +123,9 @@ legend(legendEntries,...
 %ylim(ax,[DATA.figureProperties.axisMinimums(2)-0.1,DATA.figureProperties.axisMaximums(2)+0.1]);
 % zlim(ax,[DATA.figureProperties.axisMinimums(3),DATA.figureProperties.axisMaximums(3)]);
 
-axis vis3d equal;     
-view([-24 36]);
-set(ax,'outerposition',[0.05 0.15 1 0.68]);                               % Set the axes offset position in the figure window
+% axis vis3d equal;     
+% view([-24 36]);
+% set(ax,'outerposition',[0.05 0.15 1 0.68]);                               % Set the axes offset position in the figure window
 grid on; grid minor;
 hold off;
 

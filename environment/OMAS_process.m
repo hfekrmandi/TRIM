@@ -17,7 +17,7 @@ META.phase = 'META'; % Declare the simuation active phase
 EVENTS = [];         % Reset the EVENT log container
 
 % PREPARE THE OUTPUT DATA CONTAINER
-[DATA] = GetOutputStructure(META); 
+[DATA] = GetOutputStructure(META);
 
 %%%%%%%%%%%%%%%%%%%%%% BEGIN TIME-STEP INTERATIONS %%%%%%%%%%%%%%%%%%%%%%%%
 fprintf('[%s]\n[%s]\tLAUNCHING SIMULATION...\n[%s]\n',META.phase,META.phase,META.phase);
@@ -115,15 +115,19 @@ while step <= META.TIME.numSteps
 %     end
     
     %  5. ////////////// UPDATE Communication matrix (@t=k) ///////////////
-    if step < 20 || step > 50
-        comm_list = [[1, 2]; [1, 2]];
-%         comm_list = {{1, 2}; {1, 2}; {3}};
+    if step < 20 || step > 40
+%         comm_list = [[1, 2]; [1, 2]];
+%         comm_list = {{1, 2, 3}; {1, 2, 3}; {1, 2, 3}};
 %         comm_list = [[1, 2, 3]; [1, 2, 3]; [1, 2, 3]];
+        comm_list = {{2, 3}; {1, 3}; {1, 2}};
     else
-        comm_list = [[1]; [2]];
-%         comm_list = [[1]; [2]; [3]];
+%         comm_list = [[1]; [2]];
+%         comm_list = {{1, 3}; {2, 3}; {1, 2, 3}};
 %         comm_list = [[3]; [3]; [1, 2]];
+        comm_list = {{3}; {3}; {1, 2}};
     end
+%     comm_list = {{3}; {3}; {1, 2}};
+%     comm_list = {{2, 3}; {1, 3}; {1, 2}};
     objectIndex = apply_comm_model(META, objectIndex, comm_list);
 
     % 6. //////// UPDATE SIMULATION/ENVIRONMENTAL META DATA (@t=k) ////////
@@ -798,7 +802,7 @@ function [agents] = apply_comm_model(SIM, agents, comm_list)
     end
     for index = 1:numel(agents_arr)
         agent = agents_arr(index);
-        agent_comm_list = comm_list(index,:);
+        agent_comm_list = cell2mat(comm_list{index});
         agent.memory_id_comm = agent_comm_list;
     end
 end
@@ -869,7 +873,7 @@ function [graph, id_to_index] = create_graph(agents)
     
     for i = 1:numel(agents)
         for j = agents(i).memory_id_comm
-            adj(i,id_to_index(j)) = 1;
+            adj(i,find(j == id_to_index)) = 1;
         end
     end
     

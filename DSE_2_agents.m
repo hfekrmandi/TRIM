@@ -2,6 +2,7 @@
 
 clear all; close all;
 dbstop if error
+% rng(0);
 
 % ADD THE PROGRAM PATHS
 addpath('environment');
@@ -24,7 +25,7 @@ fprintf('[SETUP]\tInitialising example script.\n');
 sim_outputPath = strcat(userdir,'\desktop\openmas-data');
 sim_vebosity   = 1;
 sim_warningDistance = 2;
-sim_maxDuration = 35;
+sim_maxDuration = 50;
 sim_timeStep    = 0.5;                        % Nominal (0.25s)
 sim_idleTimeOut = 5*sim_timeStep;
 
@@ -36,13 +37,13 @@ sim_publishFigures = false;
 sim_figureSet = {'estimates_rel', 'estimate_errors'};
 
 %% SCENARIO PARAMETERS
-sim_agentNumber     = 2;
+sim_agentNumber     = 3;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 3;
 sim_agentVelocity   = 5;
 sim_adjacencyMatrix = double(~eye(sim_agentNumber));
 sim_waypointOrbit   = 2;
-sim_waypointRadius  = 1;
+sim_waypointRadius  = 0.5;
 sim_offsetAngle     = pi/4;
 sim_obstacleNumber  = 0;
 sim_obstacleOrbit   = 10;
