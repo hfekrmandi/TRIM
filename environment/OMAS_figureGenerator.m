@@ -80,11 +80,11 @@ switch upper(char(figureLabel))
         [figureNumber,~] = GetFigure_plan(SIM,objectIndex,DATA,figureNumber);
         
     case 'ESTIMATES_REL' %% ///////////////////////////////////////////////////
-        fprintf('[%s]\tGenerating estimates figure.\n',SIM.phase);
+        fprintf('[%s]\tGenerating relative estimates figure.\n',SIM.phase);
         [figureNumber,~] = GetFigure_estimates_rel(SIM,objectIndex,DATA,figureNumber);
 
     case 'ESTIMATE_ERRORS' %% ///////////////////////////////////////////////////
-        fprintf('[%s]\tGenerating estimates figure.\n',SIM.phase);
+        fprintf('[%s]\tGenerating estimate errors figure.\n',SIM.phase);
         [figureNumber,~] = GetFigure_estimate_errors(SIM,objectIndex,DATA,figureNumber);
 
     case 'ISOMETRIC' %% ///////////////////////////////////////////////////

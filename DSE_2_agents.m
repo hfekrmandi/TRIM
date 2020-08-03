@@ -2,7 +2,7 @@
 
 clear all; close all;
 dbstop if error
-% rng(0);
+rng(0);
 
 % ADD THE PROGRAM PATHS
 addpath('environment');
@@ -53,6 +53,9 @@ sim_plotScenario    = true;
 %% INITIALISE AGENTS
 fprintf('[SETUP]\tAssigning agent definitions:\n');
 for index = 1:sim_agentNumber
+% Listed here are the agent types. Uncomment one to use that agent in the
+% simulation. 
+    
 % BASIC CLASSES
 %     agentIndex{index} = objectDefinition('radius',sim_agentRadius);     
 %     agentIndex{index} = agent('radius',sim_agentRadius);

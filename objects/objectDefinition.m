@@ -463,7 +463,6 @@ classdef objectDefinition < handle
             % maintaining a fixed quaternion rotation (constant reference 
             % orientation) in the global ENU frame from a 6DOF state vector 
             % with euler rotations.
-            printf('Halp')
             
             % NOTATION INDICIES
             if this.Is3D
@@ -504,12 +503,13 @@ classdef objectDefinition < handle
             % Under this notation, the state vector already contains the
             % global parameters of the object.
             % INPUTS:
-            % globalPosition - 3D global cartesian position given in the ENU coordinate frame.
-            % globalVelocity - 3D global cartesian velocity given in the ENU coordinate frame. 
-            % quaternion     - The new quaternion pose of body in the global frame.
-            % R              - The rotation of the body
-            % this.localState - The previous localState (independant of convention)
-            % eulerState     - The new state as reported by the agent            
+            % p - globalPosition - 3D global cartesian position given in the ENU coordinate frame.
+            % v - globalVelocity - 3D global cartesian velocity given in the ENU coordinate frame. 
+            % q - quaternion     - The new quaternion pose of body in the global frame.
+            % x - global state   - [x y z phi theta psi dx dy dz dphi dtheta dpsi]
+            % R                  - The rotation of the body
+            % this.localState    - The previous localState (independant of convention)
+            % eulerState         - The new state as reported by the agent            
             
             % Input sanity check
             assert(IsColumn(p,3),'Global position must be a 3D column vector [3x1].');

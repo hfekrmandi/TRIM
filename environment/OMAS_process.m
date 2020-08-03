@@ -116,18 +116,10 @@ while step <= META.TIME.numSteps
     
     %  5. ////////////// UPDATE Communication matrix (@t=k) ///////////////
     if step < 20 || step > 40
-%         comm_list = [[1, 2]; [1, 2]];
-%         comm_list = {{1, 2, 3}; {1, 2, 3}; {1, 2, 3}};
-%         comm_list = [[1, 2, 3]; [1, 2, 3]; [1, 2, 3]];
         comm_list = {{2, 3}; {1, 3}; {1, 2}};
     else
-%         comm_list = [[1]; [2]];
-%         comm_list = {{1, 3}; {2, 3}; {1, 2, 3}};
-%         comm_list = [[3]; [3]; [1, 2]];
         comm_list = {{3}; {3}; {1, 2}};
     end
-%     comm_list = {{3}; {3}; {1, 2}};
-%     comm_list = {{2, 3}; {1, 3}; {1, 2}};
     objectIndex = apply_comm_model(META, objectIndex, comm_list);
 
     % 6. //////// UPDATE SIMULATION/ENVIRONMENTAL META DATA (@t=k) ////////
@@ -163,11 +155,8 @@ while step <= META.TIME.numSteps
     
     % 8. ///////////////// COMPUTE CONSENSUS STEPS (@t=k) /////////////////
     agent_data = get_sorted_agent_states(META, objectIndex);
-%     agent_data = apply_comm_model_obs(agent_data);
-%     agent_data = apply_comm_model(agent_data, comm_list);
     agent_groups = break_agents_into_groups(META, agent_data);
     consensus(agent_groups);
-    %gt_estimation = gt(agent_data);
     % /////////////////////////////////////////////////////////////////////
     
     % 9. ///////////////// RECORD ESTIMATED STATE (@t=k) /////////////////////
@@ -187,19 +176,16 @@ while step <= META.TIME.numSteps
             X_estimate = agent.state_from_id(X_agent, IDs, ID);
             X_relative = X_estimate - X_zero;
             DATA.estimates_rel(index, ID, :, META.TIME.currentStep) = X_relative;
-%             DATA.estimates(index, ID, :, META.TIME.currentStep) = X_relative + ;
 
             X_gt_agent = META.OBJECTS(agent.objectID).X;
             X_gt_object = META.OBJECTS(ID).X;
             X_gt_relative = X_gt_object - X_gt_agent;
             DATA.estimate_errors(index, ID, :, META.TIME.currentStep) = X_relative - X_gt_relative;
-%             DATA.estimate_errors(index, ID, :, META.TIME.currentStep) = X_gt_relative;
         end
     end
     % /////////////////////////////////////////////////////////////////////
     
     % 10. //////// UPDATE AGENT ESTIMATE FROM CONSENSUS DATA (@t=k) ////////
-    % update_agents_from_consensus(META, detection, objectIndex)
     if META.threadPool ~= 0
         objectSnapshot = objectIndex;                                      % Make a temporary record of the object set
         parfor (ID1 = 1:META.totalObjects)
@@ -609,25 +595,6 @@ switch SIMfirstObject.type
             noise = svgs_R_from_range_SRT(range);
             observedz = relative_X + mvnrnd(zeros(1, 6), noise)';
             
-            % Define the motion model noise as:
-            % STD = 5% of traveled distance
-            % Therefore, 
-            Q_pos = (ENV.dt * norm(SIMsecondObject.X(7:9)) * 0.05)^2;
-            Q_theta = ENV.dt * norm(SIMsecondObject.X(10:12) * 0.05)^2;
-            
-            if SIMsecondObject.type == 1
-                % Observed object is an agent, grab the motion model and Q
-                observedF         = eye(2);
-                observedQ         = zeros(6);
-                observedQ(1:3,1:3)= Q_pos*eye(3);
-                observedQ(4:6,4:6)= Q_theta*eye(3);
-            else
-                % Observed object is an immobile object, motion model and Q = 0
-                observedF         = zeros(2);
-                observedQ         = zeros(6);
-                observedQ(1:3,1:3)= Q_pos*eye(3);
-                observedQ(4:6,4:6)= Q_theta*eye(3);
-            end
             %observedElevation = asin(observedPosition(3)/observedRange);
             %observedHeading   = atan2(observedPosition(2),observedPosition(1));
             % PRESENT SIZE PROPERTIES
@@ -662,8 +629,6 @@ switch SIMfirstObject.type
                                      'name',SIMsecondObject.name,...                    % The object name tag (observed)
                                      'type',SIMsecondObject.type,...                    % The objects sim-type enum
                                      'z',observedz,...                                  % The apparent range
-                                     'F',observedF,...                                  % The motion model jacobian
-                                     'Q',observedQ,...                                  % The motion model covariance
                                      'colour',SIMsecondObject.colour,...                % Finally the simulation's colourID 
                                      'DEBUG',DEBUG);                                    % Pass additional parameters (not otherwise known)
             observationPacket = vertcat(observationPacket,detectionObject);             % Append object to packet to agent
@@ -1001,21 +966,6 @@ end
 
 % /////////////////// SIMULATION OUTPUT OPERATIONS ////////////////////////
 
-function update_agents_from_consensus(SIM, detection, objectIndex)
-    observed_objects = [];
-    for index = 1:numel(detection)
-        for id_index = 1:numel(detection{index})
-            agent = objectIndex{index};
-            tmp = detection{index}.objectID;
-            position = position_from_id(agent, tmp);
-            detected_pos = detection{index}.position;
-            detection{index}.position(1) = position(1);
-            ENV = SIM.TIME;
-            agent.main(ENV,observationPacket);
-        end
-    end
-end
-        
 % UPDATE THE OBJECT PROPERTIES
 function [referenceObject,objectEVENTS] = UpdateObject(SIM,objectIndex,referenceObject)
 % This function updates a referenceObject class against the rest of the

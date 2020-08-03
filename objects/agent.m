@@ -50,30 +50,6 @@ classdef agent < objectDefinition & agent_tools
         memory_id_list = [];
         memory_id_obs = [];
         memory_id_comm = [];
-        
-%         memory_P_last = [];
-%         memory_x_last = [];
-%         memory_Y_last = [];
-%         memory_y_last = [];
-%         
-%         memory_P_information = [];
-%         memory_x_information = [];
-%         memory_Y_information = [];
-%         memory_y_information = [];
-%         
-%         memory_P_consensus = [];
-%         memory_x_consensus = [];
-%         memory_Y_consensus = [];
-%         memory_y_consensus = [];
-%         
-%         memory_Y_prior = [];
-%         memory_y_prior = [];
-%         memory_delta_I = [];
-%         memory_delta_i = [];
-%         
-%         memory_id_list = [];
-%         memory_id_obs = [];
-%         memory_id_comm = [];
     end
     
     %% ///////////////////////// MAIN METHODS /////////////////////////////
@@ -381,6 +357,12 @@ classdef agent < objectDefinition & agent_tools
             L_0 = eye(size(C_0,1)) - C_0;
             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
             y_01 = L_0*inv(F_0)'*y_11;
+            
+            % Compare the Information filter to the Kalman Filter
+            % P_kal = P_inf_2
+            % P_01 = F_0*P_11*(F_0') + Q_0
+            P_kal = F_0*inv(Y_11)*(F_0') + Q_0;
+            P_inf = inv(Y_01);
             
             % Store the consensus variables
             this.memory_Y = Y_01;

@@ -1,9 +1,8 @@
-% GET THE STANDARD 3D TRAJECTORY DATA.figureProperties [ UPDATED ]
 function [currentFigure,figureHandle] = GetFigure_estimate_errors(SIM,objectIndex,DATA,currentFigure)
 
 % CONFIGURE THE PLOT ATTRIBUTES
 figurePath = strcat(SIM.outputPath,'isometric');
-figureHandle = figure('Name','OpenMAS isometric view');
+figureHandle = figure('Name','OpenMAS estimate errors view');
 set(figureHandle,'Position',DATA.figureProperties.windowSettings);         % [x y width height]
 set(figureHandle,'Color',DATA.figureProperties.figureColor);               % Background colour 
 % setappdata(figureHandle, 'SubplotDefaultAxesLocation', [0.08, 0.08, 0.90, 0.88]); % MAXIMISE GRAPH SIZE IN WINDOW
@@ -17,8 +16,11 @@ for ID1 = 1:DATA.totalAgents
     [objectStates] = OMAS_getTrajectoryData(DATA.globalTrajectories,SIM.globalIDvector,SIM.OBJECTS(ID1).objectID,idleFlag);
     agent_pos = objectStates(1:3,:);
     
+    % Poorly written code to dynamically find the start and end of the
+    % disconnection of a 3-agent system. 
     connected_time = 1 - squeeze(DATA.Connections(2, 2, :) / 3);
     connected_time = connected_time'.*(1:numel(connected_time));
+    
     if sum(connected_time) > 0
         start = min(connected_time(connected_time > 0)) * DATA.dt;
         finish = max(connected_time) * DATA.dt;
@@ -53,7 +55,7 @@ hold on;
 
 % Title
 title(ax,...
-    sprintf('Object trajectories over a period of %ss',num2str(SIM.TIME.endTime)),...
+    sprintf('Estimate errors over a period of %ss',num2str(SIM.TIME.endTime)),...
     'interpreter',DATA.figureProperties.interpreter,...
     'fontname',DATA.figureProperties.fontName,...
     'fontweight',DATA.figureProperties.fontWeight,...
