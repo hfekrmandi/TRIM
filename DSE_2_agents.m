@@ -2,7 +2,7 @@
 
 clear all; close all;
 dbstop if error
-rng(0);
+rng(1);
 
 % ADD THE PROGRAM PATHS
 addpath('environment');

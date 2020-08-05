@@ -131,13 +131,13 @@ OMAS_finish = toc(OMAS_start);
 fprintf('[%s]\tOperation lasted %.2fs.\n',META.phase,OMAS_finish);
 
 %% ///////////// ONCE COMPLETE - RUN EXTERNAL ANALYSIS ////////////////////
-try
-    fprintf('[%s]\tMoving to post-simulation analysis...\n[%s]\n',META.phase,META.phase);
+% try
+%     fprintf('[%s]\tMoving to post-simulation analysis...\n[%s]\n',META.phase,META.phase);
     [DATA] = OMAS_analysis(META,objectIndex,EVENTS,DATA);                  % Jump to external analysis program
-catch analysisError
-    warning('[ERROR] A problem occurred interpreting the output data');
-    rethrow(analysisError);
-end
+% catch analysisError
+%     warning('[ERROR] A problem occurred interpreting the output data');
+%     rethrow(analysisError);
+% end
 % DELETE THE SYSTEM TEMPORARY FILE
 delete([META.outputPath,META.systemFile]);
 

@@ -18,7 +18,9 @@ classdef agent < objectDefinition & agent_tools
         v_nominal = 1;                  % Default nominal linear speed (m/s)
         v_max  = 2;                     % Default maximal linear speed (m/s)
         w_max  = 1;                   % Default maximal angular speed (rad/s)
-        detectionRadius = inf;
+        detectionRadius = 3;
+        obsRadius = inf;
+        commRadius = 0;
         % WAYPOINTS
         targetWaypoint;                 % The current waypoint target
         achievedWaypoints;              % The agents list of locally achieved waypoints
@@ -254,6 +256,7 @@ classdef agent < objectDefinition & agent_tools
             Y_11 = this.memory_Y;
             y_11 = this.memory_y;
             x_11 = inv(Y_11)*y_11;
+            P_11 = inv(Y_11);
             id_list = this.memory_id_list;
             
             % Pseudocode
@@ -300,6 +303,7 @@ classdef agent < objectDefinition & agent_tools
                     y_11 = tmp*0.01;
                     
                     x_11 = inv(Y_11)*y_11;
+                    P_11 = inv(Y_11);
                 end
             end
             
@@ -335,20 +339,11 @@ classdef agent < objectDefinition & agent_tools
                 i_low = this.dim_state*(i - 1) + 1;
                 i_high = this.dim_state*(i - 1) + this.dim_state;
                 
-                Q_pos = (dt * (norm(x_11(i_low+6:i_low+8)) + 0.5) * 0.2)^2;
-                Q_theta = (dt * (norm(x_11(i_low+9:i_low+11)) + 5) * 0.2)^2;
-                Q_agent = 1 * eye(12);
-                Q_agent(7:9,7:9) = 0.0001 * eye(3);
-                Q_agent(10:12,10:12) = 0.01 * eye(3);
-                if Q_pos > 0
-                    Q_agent(1:3,1:3) = Q_pos*eye(3);
-                end
-                if Q_theta > 0
-                    Q_agent(4:6,4:6) = Q_theta*eye(3);
-                end
-                Q_0(i_low:i_high,i_low:i_high) = Q_agent;
+%                 Q_0(i_low:i_high,i_low:i_high) = this.Q_distance(dt, x_11, i);
+                Q_0(i_low:i_high,i_low:i_high) = this.Q_distance(dt, x_11, i);
                 
-                F_0(i_low:i_high,i_low:i_high) = this.F(dt);
+%                 F_0(i_low:i_high,i_low:i_high) = this.F(dt);
+                F_0(i_low:i_high,i_low:i_high) = 0.9*eye(12);%this.F(dt, x_11, i);
             end
             
             % Compute the information filter steps
@@ -357,6 +352,19 @@ classdef agent < objectDefinition & agent_tools
             L_0 = eye(size(C_0,1)) - C_0;
             Y_01 = L_0*M_0*L_0' + C_0*inv(Q_0)*C_0';
             y_01 = L_0*inv(F_0)'*y_11;
+            Y_00 = Y_01 + H_0'*inv(R_0)*H_0;
+            y_00 = y_01 + H_0'*inv(R_0)*z_0;
+            
+            x_01 = F_0*x_11;
+            P_01 = F_0*P_11*F_0' + Q_0;
+            y = z_0 - H_0*x_01;
+            S = H_0*P_01*H_0' + R_0;
+            K = P_01*H_0'*inv(S);
+            x_00 = x_01 + K*y;
+            P_00 = (eye(size(K,1)) - K*H_0)*P_01;
+            
+            x_inf = inv(Y_00)*y_00;
+            P_inf = inv(Y_00);
             
             % Compare the Information filter to the Kalman Filter
             % P_kal = P_inf_2
@@ -380,6 +388,13 @@ classdef agent < objectDefinition & agent_tools
             i_low = this.dim_state*(j - 1) + 1;
             i_high = this.dim_state*(j - 1) + this.dim_state;
             ret = x(i_low:i_high);
+        end
+        
+        function [ret] = cov_from_id(this, P, id_list, id)
+            j = find(id_list==id);
+            i_low = this.dim_state*(j - 1) + 1;
+            i_high = this.dim_state*(j - 1) + this.dim_state;
+            ret = P(i_low:i_high,i_low:i_high);
         end
         
         function [Hz] = Hz_range_2d(this, x, agent1, agent2)
@@ -446,14 +461,78 @@ classdef agent < objectDefinition & agent_tools
             z = sqrt((set_1*x - set_2*x)'*(set_1*x - set_2*x));
         end
         
-        function [F] = F(this, dt)
+        function [F] = F(this, dt, x, agent1)
             F = eye(this.dim_state);
             block = dt * eye(6);
             F(1:6,7:12) = block;
         end
         
-        function [F] = F_unicycle_2d(this, x, agent1, agent2)
+        function [F] = F_unicycle_2d(this, dt, x, agent1)
+            agent1_row_min = this.dim_state*(agent1 - 1) + 1;
+            agent1_row_max = agent1_row_min + this.dim_state - 1;
+
+            x1 = x(agent1_row_min:agent1_row_max);
+            
             F = eye(this.dim_state);
+            w = x1(10);
+            
+            if w == 0
+                F(1,7) = dt;
+                F(1,8) = 0;
+                F(2,7) = 0;
+                F(2,8) = dt;
+                
+                F(7,7) = 1;
+                F(7,8) = 0;
+                F(8,7) = 0;
+                F(8,8) = 1;
+            else
+                F(1,7) = sin(w*dt) / w;
+                F(1,8) = -(1 - cos(w*dt)) / w;
+                F(2,7) = (1 - cos(w*dt)) / w;
+                F(2,8) = sin(w*dt) / w;
+                
+                F(7,7) = cos(w*dt);
+                F(7,8) = -sin(w*dt);
+                F(8,7) = sin(w*dt);
+                F(8,8) = cos(w*dt);
+            end
+            
+            block = dt * eye(4);
+            F(3:6,9:12) = block;
+        end
+        
+        function [Q] = Q_distance(this, dt, x, agent1)
+            i_low = this.dim_state*(agent1 - 1) + 1;
+            i_high = this.dim_state*(agent1 - 1) + this.dim_state;
+
+            Q_pos = (dt * (norm(x(i_low+6:i_low+8)) + 0.5) * 0.10)^2;
+            Q_theta = (dt * (norm(x(i_low+9:i_low+11)) + 0.5) * 0.10)^2;
+            Q = 1 * eye(12);
+            Q(7:9,7:9) = 0.001 * eye(3);
+            Q(10:12,10:12) = 0.001 * eye(3);
+            if Q_pos > 0
+                Q(1:3,1:3) = Q_pos*eye(3);
+            end
+            if Q_theta > 0
+                Q(4:6,4:6) = Q_theta*eye(3);
+            end
+        end
+        
+        function [Q] = Q_bangu(this, dt, x, agent1)
+            sv = 0.5;
+            b1 = dt^4/4 * eye(6);
+            b2 = dt^3/2 * eye(6);
+            b3 = dt^2 * eye(6);
+            
+            Q = zeros(this.dim_state);
+            
+            Q(1:6,1:6) = b1;
+            Q(1:6,7:12) = b2;
+            Q(7:12,1:6) = b2;
+            Q(7:12,7:12) = b3;
+            
+            Q = Q * sv^2;
         end
     end
     

@@ -49,7 +49,7 @@ globalState_k = globalState_k + noise;
 % eul_vel = 7;
 % METAObjUpdate.X = quat2eul(quaternion_k');
 METAObjUpdate.eulZYX = quat2eul(quaternion_k');
-METAObjUpdate.X = [globalPosition_k;globalVelocity_k;quat2eul(quaternion_k')';globalState_k(10:12)];
+METAObjUpdate.X = [globalPosition_k;quat2eul(quaternion_k')';globalVelocity_k;globalState_k(10:12)];
 
 % REBUILD GLOBAL STATES (ENTITY & META)
 METAObjUpdate.globalState = [globalPosition_k;globalVelocity_k;quaternion_k]; 

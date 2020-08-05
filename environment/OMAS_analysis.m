@@ -92,15 +92,15 @@ sendOutputToFiles(META,EVENTS,DATA,OBJECTS)
 
 % ///////////////////// FIGURE GENERATION PROCEDURE ///////////////////////
 for figNum = 1:length(figureList)
-    try
+%     try
         % Generate output figures
         [plotnum] = OMAS_figureGenerator(META,OBJECTS,DATA,plotnum,figureList(figNum)); % Jump to the figure index
-    catch figureGenerationError
-        warning('[OMAS-error] A problem occurred generating the output figures.');
-        warning(figureGenerationError.message);
-        fprintf('\n');
-        rethrow(figureGenerationError);
-    end
+%     catch figureGenerationError
+%         warning('[OMAS-error] A problem occurred generating the output figures.');
+%         warning(figureGenerationError.message);
+%         fprintf('\n');
+%         rethrow(figureGenerationError);
+%     end
 end
 end
 

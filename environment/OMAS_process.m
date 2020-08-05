@@ -115,12 +115,14 @@ while step <= META.TIME.numSteps
 %     end
     
     %  5. ////////////// UPDATE Communication matrix (@t=k) ///////////////
-    if step < 20 || step > 40
-        comm_list = {{2, 3}; {1, 3}; {1, 2}};
-    else
-        comm_list = {{3}; {3}; {1, 2}};
-    end
-    objectIndex = apply_comm_model(META, objectIndex, comm_list);
+%     if step < 20 || step > 40
+%         comm_list = {{2, 3}; {1, 3}; {1, 2}};
+%     else
+%         comm_list = {{3}; {3}; {1, 2}};
+%     end
+%     comm_list = {{}; {}; {}};
+    objectIndex = apply_obs_model_distance(META, objectIndex);
+    objectIndex = apply_comm_model_distance(META, objectIndex);
 
     % 6. //////// UPDATE SIMULATION/ENVIRONMENTAL META DATA (@t=k) ////////
     [META,metaEVENTS] = UpdateSimulationMeta(META,objectIndex);            % Update META snapshot with equivilant objectIndex.state
@@ -165,6 +167,7 @@ while step <= META.TIME.numSteps
         % and save to the output DATA.globalTrajectories set, must be done synchronously).
         agent = agent_data{index};
         X_agent = agent.memory_x;
+        P_agent = agent.memory_P;
         IDs = agent.memory_id_list;
         Obs = agent.memory_id_obs;
         Comm = agent.memory_id_comm;
@@ -172,6 +175,9 @@ while step <= META.TIME.numSteps
         DATA.Observations(index, 1:numel(Obs), META.TIME.currentStep) = Obs';
         DATA.Connections(index, 1:numel(Comm), META.TIME.currentStep) = Comm';
         for ID = IDs
+            P = agent.cov_from_id(P_agent, IDs, agent.objectID);
+            DATA.estimate_covariance(index, ID, :, :, META.TIME.currentStep) = P;
+            
             X_zero = agent.state_from_id(X_agent, IDs, agent.objectID);
             X_estimate = agent.state_from_id(X_agent, IDs, ID);
             X_relative = X_estimate - X_zero;
@@ -544,22 +550,34 @@ switch SIMfirstObject.type
             % GET THE SIM OBJECT OF THE EVALUATION OBJECT
             SIMsecondObject = SIM.OBJECTS(ID2);
             firstObject = objectIndex{SIMfirstObject.objectID};
-            comm_list = firstObject.memory_id_comm;
-            index = find(comm_list == ID2);
+            
+            isSameObject = SIMfirstObject.objectID == SIMsecondObject.objectID;
+            
+            obs_list = firstObject.memory_id_obs;
+            index = find(obs_list == ID2);
             if ~isempty(index)
-                isConnected = true;
+                isObserved = true;
             else
-                isConnected = false;
+                isObserved = false;
             end
             
-            % Skip condition - Get the current status of this object
-            isDetected = 1 == SIMfirstObject.objectStatus(ID2,eventType.detection);
-            isSameObject = SIMfirstObject.objectID == SIMsecondObject.objectID; 
-            if ~isDetected || isSameObject
-                continue
-            end
+%             % Skip condition - Get the current status of this object
+%             isDetected = 1 == SIMfirstObject.objectStatus(ID2,eventType.detection);
+%             isSameObject = SIMfirstObject.objectID == SIMsecondObject.objectID; 
+%             if ~isDetected || isSameObject
+%                 continue
+%             end
             
-            if ~isConnected && SIMsecondObject.type == 1
+            if SIMsecondObject.type == OMAS_objectType.waypoint
+                warning('off')
+                association = objectIndex{ID2}.GetAgentAssociation(referenceObject);
+                if numel(association) < 1
+                    continue
+                end
+                warning('on')
+            end
+
+            if (~isObserved || isSameObject) && SIMsecondObject.type == 1
                 continue
             end
             
@@ -769,6 +787,58 @@ function [agents] = apply_comm_model(SIM, agents, comm_list)
         agent = agents_arr(index);
         agent_comm_list = cell2mat(comm_list{index});
         agent.memory_id_comm = agent_comm_list;
+    end
+end
+
+% Update the momory_id_comm list in each agent to include each agent they
+% can communicate with.
+function [agents] = apply_comm_model_distance(SIM, agents, threshold)
+
+    agents_arr = [];
+    for id = 1:numel(agents)
+        agent = agents{id};
+        if SIM.OBJECTS(agent.objectID).type == 1
+            agents_arr = [agents_arr, agent];
+        end
+    end
+    for i = 1:numel(agents_arr)
+        agents_arr(i).memory_id_comm = [];
+        for j = 1:numel(agents_arr)
+            if i ~= j
+                detect = agents_arr(i).commRadius;
+                Xi = SIM.OBJECTS(agents_arr(i).objectID).X;
+                Xj = SIM.OBJECTS(agents_arr(j).objectID).X;
+                if norm(Xj(1:3) - Xi(1:3)) <= detect
+                    agents_arr(i).memory_id_comm = [agents_arr(i).memory_id_comm, j];
+                end
+            end
+        end
+    end
+end
+
+% Update the momory_id_obs list in each agent to include each agent they
+% can observe.
+function [agents] = apply_obs_model_distance(SIM, agents, threshold)
+
+    agents_arr = [];
+    for id = 1:numel(agents)
+        agent = agents{id};
+        if SIM.OBJECTS(agent.objectID).type == 1
+            agents_arr = [agents_arr, agent];
+        end
+    end
+    for i = 1:numel(agents_arr)
+        agents_arr(i).memory_id_obs = [];
+        for j = 1:numel(agents_arr)
+            if i ~= j
+                detect = agents_arr(i).obsRadius;
+                Xi = SIM.OBJECTS(agents_arr(i).objectID).X;
+                Xj = SIM.OBJECTS(agents_arr(j).objectID).X;
+                if norm(Xj(1:3) - Xi(1:3)) <= detect
+                    agents_arr(i).memory_id_obs = [agents_arr(i).memory_id_obs, j];
+                end
+            end
+        end
     end
 end
 
@@ -1135,6 +1205,7 @@ systemStates = globalStateNum*SIM.totalObjects;                            % The
 id_initial = zeros(SIM.totalAgents, SIM.totalObjects, SIM.TIME.numSteps);
 comm_initial = zeros(SIM.totalAgents, SIM.totalAgents, SIM.TIME.numSteps);
 estimate_initial = zeros(SIM.totalAgents, SIM.totalObjects, 12, SIM.TIME.numSteps);
+covariance_initial = zeros(SIM.totalAgents, SIM.totalObjects, 12, 12, SIM.TIME.numSteps);
 indexSet = zeros(2,length(SIM.OBJECTS));                                   % Indices are defined [start;end]*n
 indexSet(1,:) = (0:globalStateNum:systemStates-globalStateNum) + 1;        % Declare the state indices
 indexSet(2,:) = globalStateNum:globalStateNum:systemStates;
@@ -1155,7 +1226,7 @@ DATA = struct('outputPath',[SIM.outputPath,'DATA.mat'],...
            'estimates_rel',estimate_initial,...
      'estimate_errors_rel',estimate_initial,...
                'estimates',estimate_initial,...
-         'estimate_errors',estimate_initial,...
+         'estimate_errors',covariance_initial,...
      'estimate_covariance',[],...
       'globalTrajectories',NaN(systemStates,SIM.TIME.numSteps));         % Prepare the output container
 %       'globalTrajectories',zeros(systemStates,SIM.TIME.numSteps));         % Prepare the output container
