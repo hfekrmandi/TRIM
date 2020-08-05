@@ -343,7 +343,7 @@ classdef agent < objectDefinition & agent_tools
                 Q_0(i_low:i_high,i_low:i_high) = this.Q_distance(dt, x_11, i);
                 
 %                 F_0(i_low:i_high,i_low:i_high) = this.F(dt);
-                F_0(i_low:i_high,i_low:i_high) = 0.9*eye(12);%this.F(dt, x_11, i);
+                F_0(i_low:i_high,i_low:i_high) = this.F(dt, x_11, i);
             end
             
             % Compute the information filter steps
