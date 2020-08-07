@@ -25,7 +25,7 @@ fprintf('[SETUP]\tInitialising example script.\n');
 sim_outputPath = strcat(userdir,'\desktop\openmas-data');
 sim_vebosity   = 1;
 sim_warningDistance = 2;
-sim_maxDuration = 50;
+sim_maxDuration = 30;
 sim_timeStep    = 0.5;                        % Nominal (0.25s)
 sim_idleTimeOut = 5*sim_timeStep;
 
@@ -34,9 +34,24 @@ sim_publishFigures = false;
 % sim_figureSet = {'all'};
 % sim_figureSet = {'events','plan','inputs','isometric','gif'};
 % sim_figureSet = {'plan','avoidance','inputs','isometric','gif'};
-sim_figureSet = {'estimates_rel', 'estimate_errors'};
+sim_figureSet = {'isometric','estimates_rel', 'estimate_errors'};
 
 %% SCENARIO PARAMETERS
+
+%% Set obs and comm radii
+% % Dead reckoning
+% sim_obsRadius       = 0;
+% sim_commRadius      = 0;
+
+% % Information(/Kalman) Filter
+% sim_obsRadius       = inf;
+% sim_commRadius      = 0;
+
+% Hybrid Consensus
+sim_obsRadius       = inf;
+sim_commRadius      = inf;
+
+% Other parameters
 sim_agentNumber     = 3;
 sim_agentRadius     = 0.5;
 sim_agentOrbit      = 3;
@@ -136,7 +151,7 @@ end
 % [ objectIndex ] = GetScenario_corridor('agents',agentIndex,'adjacencyMatrix',sim_adjacencyMatrix,'plot',sim_plotScenario);
 % [ objectIndex ] = GetScenario_formation_split('agents',agentIndex,'agentSpacing',4,'adjacencyMatrix',sim_adjacencyMatrix,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
 % [ objectIndex ] = GetScenario_formation_fourObstacles('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',1,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
- [ objectIndex ] = Scenario_3_agents_5_waypoints('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',2,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma);
+ [ objectIndex ] = Scenario_3_agents_5_waypoints('agents',agentIndex,'obstacles',sim_obstacleNumber,'obstacleRadius',2,'obstacle_orbit',sim_obstacleOrbit,'waypointOrbit',sim_waypointOrbit,'offsetAngle',pi/2,'plot',sim_plotScenario,'noiseFactor',sim_noiseSigma,'obsRadius',sim_obsRadius,'commRadius',sim_commRadius);
 
 % % OBSTACLE TESTS
 % [ objectIndex ] = GetScenario_fourCuboidObstacles('agents',agentIndex,'plot',sim_plotScenario);

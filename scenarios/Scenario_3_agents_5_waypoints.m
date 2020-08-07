@@ -20,7 +20,9 @@ defaultConfig = struct(...
     'waypointRadius',0.1,...
     'adjacencyMatrix',[],...                            % The globally specified adjacency matrix
     'noiseFactor',0,...
-    'plot',false);                     
+    'plot',false,...
+    'obsRadius',1,...
+    'commRadius',1);                     
 % Instanciate the scenario builder
 SBinstance = scenarioBuilder();
 % Parse user inputs 
@@ -63,9 +65,9 @@ end
 %     [-8 1 0];...
 %     [-8 -1 0]];
 
-locations = [[0 -2 0];...
-    [0 2 0];...
-    [0 0 0]];
+locations = [[0 2 0];...
+    [0 0 0];...
+    [0 -2 0]];
 
 % MOVE THROUGH THE AGENTS AND INITIALISE WITH GLOBAL PROPERTIES
 fprintf('[SCENARIO]\tAssigning agent global parameters...\n'); 
@@ -204,14 +206,14 @@ end
 %     [24 0 0]];
 
 % Agent 1 waypoint locations
-waypoint_locations(:,:,1) = [[10 -20 0];...
-    [30 -5 0]];
-% Agent 2 waypoint locations
-waypoint_locations(:,:,2) = [[10 20 0];...
+waypoint_locations(:,:,1) = [[10 20 0];...
     [30 5 0]];
+% Agent 2 waypoint locations
+waypoint_locations(:,:,2) = [[10 0 0];...
+    [40 0 0]];
 % Agent 3 waypoint locations
-waypoint_locations(:,:,3) = [[10 0 0];...
-    [30 0 0]];
+waypoint_locations(:,:,3) = [[10 -20 0];...
+    [30 -5 0]];
 
 fprintf('[SCENARIO]\tAssigning waypoint definitions:\n'); 
 n_waypoints = size(waypoint_locations, 1);
@@ -227,6 +229,13 @@ for agent_num = 1:agentNumber
         % Create the way-point association
         waypointIndex{index}.CreateAgentAssociation(agentIndex{agent_num},5);  % Create waypoint with association to agent
     end
+end
+
+%% Set Agent obs/comm properties
+for i = 1:agentNumber
+    agent = inputConfig.agents{i};
+    agent.obsRadius = inputConfig.obsRadius;
+    agent.commRadius = inputConfig.commRadius;
 end
 
 %% DEFINE WAYPOINTS AND ASSIGN GLOBAL PARAMETERS

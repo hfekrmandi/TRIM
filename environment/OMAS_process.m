@@ -176,6 +176,9 @@ while step <= META.TIME.numSteps
         DATA.Connections(index, 1:numel(Comm), META.TIME.currentStep) = Comm';
         for ID = IDs
             P = agent.cov_from_id(P_agent, IDs, agent.objectID);
+%             P_zero = agent.cov_from_id(P_agent, IDs, agent.objectID);
+%             P_estimate = agent.cov_from_id(P_agent, IDs, ID);
+%             P_relative = P_estimate - P_zero;
             DATA.estimate_covariance(index, ID, :, :, META.TIME.currentStep) = P;
             
             X_zero = agent.state_from_id(X_agent, IDs, agent.objectID);

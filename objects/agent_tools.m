@@ -38,13 +38,13 @@ classdef agent_tools < objectDefinition
             % [ 3 5 9 ] - Waypoint priorities.
             
             % TARGET WAYPOINT IS EMPTY -> POPULATE WITH NEW WAYPOINTS
-            if isempty(this.targetWaypoint)
+%             if isempty(this.targetWaypoint)
                 % NO WAYPOINTS HAVE BEEN SELECTED
-                if isempty(this.achievedWaypoints)
-                    [~,maxPriorityIndex] = max(waypointMatrix(3,:));       % Index of maximum priority value in waypoint matrix
-                    waypointSetIndex = waypointMatrix(1,maxPriorityIndex); % Gets the associated waypoint set index of the highest priority
-                    this.targetWaypoint = waypointSet(waypointSetIndex);    % Update with the highest priority waypoint
-                else
+%                 if isempty(this.achievedWaypoints)
+%                     [~,maxPriorityIndex] = max(waypointMatrix(3,:));       % Index of maximum priority value in waypoint matrix
+%                     waypointSetIndex = waypointMatrix(1,maxPriorityIndex); % Gets the associated waypoint set index of the highest priority
+%                     this.targetWaypoint = waypointSet(waypointSetIndex);    % Update with the highest priority waypoint
+%                 else
                     % SELECT HIGHEST PRIORITY, BUT NOT ACHIEVED
                     invalidWaypointIDs = this.achievedWaypoints;            % Get the achieved waypoint IDs
                     availableWaypointIDs = waypointMatrix(2,:);            % Get those visable IDs
@@ -74,8 +74,8 @@ classdef agent_tools < objectDefinition
                     [~,maxValidIndex ] = max(validWaypoints(3,:));       % Get the index of max priority waypoint
                     waypointSetIndex = validWaypoints(1,maxValidIndex);  % Get the location of the target waypoint in the waypoint set
                     this.targetWaypoint = waypointSet(waypointSetIndex);  % Select waypoint object
-                end
-            end
+%                 end
+%             end
             
             % EVALUATE CURRENT TARGET WAYPOINT ////////////////////////////
             % CHECK THE TOLERANCES ON THE CURRENT TARGET WAYPOINT

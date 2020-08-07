@@ -50,6 +50,35 @@ function [currentFigure,figureHandle] = GetFigure_estimates_rel(SIM,objectIndex,
 
 % DATA.ids(index, :, META.TIME.currentStep) = IDs';
 % DATA.estimates(index, ID, :, META.TIME.currentStep) = X_relative;
+set_maxmin = 0;
+for ID1 = 1:DATA.totalAgents 
+    
+    idleFlag = NaN('double');
+    [objectStates] = OMAS_getTrajectoryData(DATA.globalTrajectories,SIM.globalIDvector,SIM.OBJECTS(ID1).objectID,idleFlag);
+    agent_pos = objectStates(1:3,:);
+    
+    for ID2 = 1:DATA.totalAgents
+        if SIM.OBJECTS(ID2).type == 1 && ID1 ~= ID2
+            [objectStates] = OMAS_getTrajectoryData(DATA.globalTrajectories,SIM.globalIDvector,SIM.OBJECTS(ID2).objectID,idleFlag);
+            agent_pos = objectStates(1:3,:);
+            
+            positions = agent_pos + squeeze(DATA.estimates_rel(ID2, ID1, 1:3, :));
+            if ~set_maxmin
+                pos_max = max(positions,[],2)';
+                pos_min = min(positions,[],2)';
+                set_maxmin = 1;
+            else
+                tmp = max(positions,[],2)';
+                tmp2 = min(positions,[],2)';
+                pos_max = max([pos_max; max(positions,[],2)']);
+                pos_min = min([pos_min; min(positions,[],2)']);
+            end
+        end
+    end
+end
+
+pos_max = 5*ceil(pos_max/5);
+pos_min = 5*floor(pos_min/5);
 
 for ID1 = 1:DATA.totalAgents 
     
@@ -189,8 +218,8 @@ for ID1 = 1:DATA.totalAgents
         'fontname',DATA.figureProperties.fontName,...
         'interpreter',DATA.figureProperties.interpreter);
 
-    % xlim(ax,[-DATA.figureProperties.maxAbsPosition,DATA.figureProperties.maxAbsPosition]);
-    % ylim(ax,[-DATA.figureProperties.maxAbsPosition,DATA.figureProperties.maxAbsPosition]);
+    xlim(ax,[pos_min(1),pos_max(1)]);
+    ylim(ax,[pos_min(2),pos_max(2)]);
     %zlim(ax,[-DATA.figureProperties.maxAbsPosition,DATA.figureProperties.maxAbsPosition]);
     %xlim(ax,[DATA.figureProperties.axisMinimums(1)-0.1,DATA.figureProperties.axisMaximums(1)+0.1]);
     %ylim(ax,[DATA.figureProperties.axisMinimums(2)-0.1,DATA.figureProperties.axisMaximums(2)+0.1]);
