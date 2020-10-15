@@ -34,7 +34,7 @@ sim_publishFigures = false;
 % sim_figureSet = {'all'};
 % sim_figureSet = {'events','plan','inputs','isometric','gif'};
 % sim_figureSet = {'plan','avoidance','inputs','isometric','gif'};
-sim_figureSet = {'isometric','estimates_rel', 'estimate_errors'};
+sim_figureSet = {'plan','estimates_rel', 'estimate_errors'};
 
 %% SCENARIO PARAMETERS
 
@@ -49,7 +49,7 @@ sim_figureSet = {'isometric','estimates_rel', 'estimate_errors'};
 
 % Hybrid Consensus
 sim_obsRadius       = inf;
-sim_commRadius      = inf;
+sim_commRadius      = 0;
 
 % Other parameters
 sim_agentNumber     = 3;
